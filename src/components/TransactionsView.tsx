@@ -161,23 +161,25 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
           </div>
         </div>
 
-        {/* 3 Summary Badges */}
-        <div className="grid grid-cols-3 gap-3 pt-4 text-center">
-          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
-            <span className="text-xs text-slate-400">총 수입</span>
-            <div className="text-base sm:text-lg font-bold text-emerald-400 mt-0.5">
+        {/* 3 Summary Badges - Perfectly fitted in a single line with signs */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-4 text-center">
+          <div className="px-1.5 py-2.5 sm:p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col justify-center items-center overflow-hidden">
+            <span className="text-[11px] sm:text-xs text-slate-400 font-medium whitespace-nowrap">총 수입</span>
+            <div className="text-xs xs:text-sm sm:text-base font-black text-emerald-400 mt-1 whitespace-nowrap truncate w-full tracking-tight">
               +{formatKRW(summary.totalIncome)}
             </div>
           </div>
-          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
-            <span className="text-xs text-slate-400">총 지출</span>
-            <div className="text-base sm:text-lg font-bold text-rose-400 mt-0.5">
+          <div className="px-1.5 py-2.5 sm:p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col justify-center items-center overflow-hidden">
+            <span className="text-[11px] sm:text-xs text-slate-400 font-medium whitespace-nowrap">총 지출</span>
+            <div className="text-xs xs:text-sm sm:text-base font-black text-rose-400 mt-1 whitespace-nowrap truncate w-full tracking-tight">
               -{formatKRW(summary.totalExpense)}
             </div>
           </div>
-          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
-            <span className="text-xs text-slate-400">당월 수지</span>
-            <div className="text-base sm:text-lg font-bold text-sky-400 mt-0.5">
+          <div className="px-1.5 py-2.5 sm:p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col justify-center items-center overflow-hidden">
+            <span className="text-[11px] sm:text-xs text-slate-400 font-medium whitespace-nowrap">당월 수지</span>
+            <div className={`text-xs xs:text-sm sm:text-base font-black mt-1 whitespace-nowrap truncate w-full tracking-tight ${
+              summary.balance >= 0 ? "text-sky-400" : "text-rose-400"
+            }`}>
               {summary.balance >= 0 ? "+" : ""}{formatKRW(summary.balance)}
             </div>
           </div>

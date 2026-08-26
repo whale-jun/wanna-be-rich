@@ -183,6 +183,7 @@ export function App() {
             currentMonth={currentMonth}
             budgets={budgets}
             transactions={transactions}
+            recurringItems={recurringItems}
             onSaveBudget={setBudgetForMonth}
           />
         )}

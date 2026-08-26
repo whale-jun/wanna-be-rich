@@ -9,8 +9,9 @@ import { formatKRW, calculateMonthlySummary } from "../utils/calculators";
 import { getCategoryColor } from "../utils/categories";
 import { 
   ResponsiveContainer, 
-  BarChart, 
+  ComposedChart,
   Bar, 
+  Line,
   XAxis, 
   YAxis, 
   Tooltip, 
@@ -28,7 +29,8 @@ import {
   CheckCircle2, 
   Calendar,
   Clock,
-  Plus
+  Plus,
+  LineChart as LineChartIcon
 } from "lucide-react";
 
 interface DashboardProps {
@@ -71,20 +73,41 @@ export const Dashboard: React.FC<DashboardProps> = ({
     : 0;
   const remainingBudget = Math.max(0, currentBudget - summary.totalExpense);
 
-  // 4. 최근 6개월 수입 vs 지출 추이 데이터
+  // 4. 최근 6개월 수입 vs 지출 vs 총 자산 꺾은선 추이 데이터
   const [currY, currM] = currentMonth.split("-").map(Number);
-  const monthlyTrendData = [];
+  const monthList: { mStr: string; mLabel: string }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(currY, currM - 1 - i, 1);
     const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const mLabel = `${d.getMonth() + 1}월`;
-    const mSummary = calculateMonthlySummary(transactions, mStr);
-    monthlyTrendData.push({
-      month: mLabel,
-      수입: mSummary.totalIncome,
-      지출: mSummary.totalExpense,
-    });
+    monthList.push({ mStr, mLabel });
   }
+
+  // 과거 월별 순이익 흐름으로 각 월말 총자산 역산
+  // 현재 netWorth 기준으로 이후 변동을 제외하고 각 시점의 총자산 추정
+  let runningAsset = netWorth;
+  const monthlyBalances = monthList.map(({ mStr }) => {
+    const s = calculateMonthlySummary(transactions, mStr);
+    return { mStr, income: s.totalIncome, expense: s.totalExpense, net: s.totalIncome - s.totalExpense };
+  });
+
+  // 현재월 이후의 총자산에서 거꾸로 역산
+  const assetHistoryMap: Record<string, number> = {};
+  for (let i = monthlyBalances.length - 1; i >= 0; i--) {
+    assetHistoryMap[monthlyBalances[i].mStr] = runningAsset;
+    // 이전 달의 자산 = 현재달 자산 - 이번달 순수익
+    runningAsset = runningAsset - monthlyBalances[i].net;
+  }
+
+  const monthlyTrendData = monthlyBalances.map(({ mStr, income, expense }) => {
+    const d = new Date(mStr + "-01");
+    return {
+      month: `${d.getMonth() + 1}월`,
+      수입: income,
+      지출: expense,
+      총자산: Math.max(0, assetHistoryMap[mStr] || 0),
+    };
+  });
 
   // 5. 이번 달 카테고리별 지출 도넛 차트 데이터
   const categoryExpenseMap: Record<string, number> = {};
@@ -219,52 +242,91 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Main Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 월별 수입 vs 지출 추이 */}
+        {/* 1. 최근 6개월 수입 & 지출 & 총 자산 꺾은선 추이 차트 */}
         <div className="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
             <div>
-              <h3 className="text-base font-bold text-white">최근 6개월 수입 & 지출 추이</h3>
-              <p className="text-xs text-slate-400 mt-0.5">매월 재정 건전성 및 잉여자금 흐름</p>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span>최근 6개월 수입 & 지출 & 총 자산 추이</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">막대(수입/지출) 및 꺾은선(총 자산 변동) 통합 분석</p>
             </div>
-            <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">
-              막대 그래프
-            </span>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="flex items-center gap-1 text-sky-400 font-semibold bg-sky-500/10 px-2 py-1 rounded-md border border-sky-500/20">
+                <LineChartIcon className="w-3.5 h-3.5" />
+                <span>총 자산 꺾은선</span>
+              </span>
+            </div>
           </div>
 
           <div className="h-64 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <ComposedChart data={monthlyTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} />
+                {/* 좌측 Y축: 수입 / 지출 */}
                 <YAxis 
+                  yAxisId="left"
                   stroke="#64748b" 
+                  fontSize={11} 
+                  tickLine={false} 
+                  tickFormatter={(val) => `${(val / 10000).toLocaleString()}만`} 
+                />
+                {/* 우측 Y축: 총 자산 */}
+                <YAxis 
+                  yAxisId="right"
+                  orientation="right"
+                  stroke="#38bdf8" 
                   fontSize={11} 
                   tickLine={false} 
                   tickFormatter={(val) => `${(val / 10000).toLocaleString()}만`} 
                 />
                 <Tooltip 
                   contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: "12px", color: "#fff" }}
-                  formatter={(value: any) => [formatKRW(Number(value)), ""]}
+                  formatter={(value: any, name: any) => [
+                    formatKRW(Number(value)), 
+                    name === "총자산" ? "📈 총 자산" : name === "수입" ? "🟢 수입" : "🔴 지출"
+                  ]}
                 />
-                <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
-                <Bar dataKey="수입" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={32} />
-                <Bar dataKey="지출" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={32} />
-              </BarChart>
+                <Legend 
+                  wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
+                  formatter={(value) => {
+                    if (value === "총자산") return <span className="text-sky-400 font-bold">총 자산 (꺾은선)</span>;
+                    if (value === "수입") return <span className="text-emerald-400 font-bold">수입</span>;
+                    if (value === "지출") return <span className="text-rose-400 font-bold">지출</span>;
+                    return value;
+                  }}
+                />
+                <Bar yAxisId="left" dataKey="수입" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                <Bar yAxisId="left" dataKey="지출" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                <Line 
+                  yAxisId="right" 
+                  type="monotone" 
+                  dataKey="총자산" 
+                  stroke="#38bdf8" 
+                  strokeWidth={3} 
+                  dot={{ fill: "#0284c7", stroke: "#38bdf8", strokeWidth: 2, r: 4 }} 
+                  activeDot={{ r: 6, fill: "#38bdf8" }}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* 카테고리별 지출 도넛 차트 */}
+        {/* 2. 카테고리별 지출 비중 & 지출 비용 상세 카드 */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <div>
               <h3 className="text-base font-bold text-white">카테고리별 지출 비중</h3>
-              <p className="text-xs text-slate-400 mt-0.5">이번 달 가장 많이 쓴 항목</p>
+              <p className="text-xs text-slate-400 mt-0.5">항목별 지출 비율 및 실제 지출액</p>
             </div>
+            <span className="text-xs font-bold text-slate-300">
+              총 {formatKRW(summary.totalExpense)}
+            </span>
           </div>
 
           {categoryChartData.length > 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="h-48 w-full relative">
+              <div className="h-44 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -273,8 +335,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={75}
+                      innerRadius={46}
+                      outerRadius={70}
                       paddingAngle={3}
                     >
                       {categoryChartData.map((entry) => (
@@ -283,24 +345,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </Pie>
                     <Tooltip 
                       contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: "12px", color: "#fff" }}
-                      formatter={(val: any) => [formatKRW(Number(val)), ""]}
+                      formatter={(val: any, name: any) => [
+                        `${formatKRW(Number(val))} (${Math.round((Number(val) / summary.totalExpense) * 100)}%)`,
+                        name
+                      ]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
 
-              <div className="w-full mt-2 grid grid-cols-2 gap-2 text-xs max-h-32 overflow-y-auto pr-1">
-                {categoryChartData.slice(0, 6).map((item) => (
-                  <div key={item.name} className="flex items-center justify-between bg-slate-950/40 p-1.5 rounded-lg border border-slate-800">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: getCategoryColor(item.name) }} />
-                      <span className="text-slate-300 truncate">{item.name}</span>
+              {/* 카테고리별 지출 비용 & 비중 (예: 주거/통신 56% \n 300,000 원) */}
+              <div className="w-full mt-2 grid grid-cols-2 gap-2.5 max-h-40 overflow-y-auto pr-1">
+                {categoryChartData.map((item) => {
+                  const percent = Math.round((item.value / summary.totalExpense) * 100);
+                  const color = getCategoryColor(item.name);
+                  return (
+                    <div 
+                      key={item.name} 
+                      className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/90 flex flex-col justify-between hover:border-slate-700 transition"
+                    >
+                      {/* 1행: 카테고리명 & 비중 % */}
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                          <span className="text-xs font-semibold text-slate-300 truncate">{item.name}</span>
+                        </div>
+                        <span className="text-xs font-bold text-slate-100 shrink-0">
+                          {percent}%
+                        </span>
+                      </div>
+                      {/* 2행: 실제 지출 금액 (예: 300,000 원) */}
+                      <div className="mt-1 text-right text-xs font-black text-rose-300 tracking-tight">
+                        {formatKRW(item.value)}
+                      </div>
                     </div>
-                    <span className="font-semibold text-slate-200 shrink-0">
-                      {Math.round((item.value / summary.totalExpense) * 100)}%
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -335,7 +415,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 const daysLeft = item.dayOfMonth - currentDay;
                 return (
                   <div 
-                    key={item.id}
+                    key={item.id} 
                     className="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800/80 hover:border-slate-700 transition"
                   >
                     <div className="flex items-center gap-3">
@@ -389,7 +469,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="space-y-2.5">
             {recentTransactions.map((tx) => (
               <div 
-                key={tx.id}
+                key={tx.id} 
                 className="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800/80 hover:border-slate-700 transition"
               >
                 <div className="flex items-center gap-3">

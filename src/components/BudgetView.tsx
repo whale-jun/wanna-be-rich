@@ -1,19 +1,20 @@
 import React, { useState } from "react";
-import type { MonthlyBudget, Transaction } from "../types/financial";
+import type { MonthlyBudget, Transaction, RecurringItem } from "../types/financial";
 import { EXPENSE_CATEGORIES, getCategoryColor } from "../utils/categories";
 import { formatKRW } from "../utils/calculators";
 import { 
   Target, 
   Sliders, 
-  Calendar, 
   Zap, 
-  Save
+  Save,
+  Repeat
 } from "lucide-react";
 
 interface BudgetViewProps {
   currentMonth: string; // YYYY-MM
   budgets: Record<string, MonthlyBudget>;
   transactions: Transaction[];
+  recurringItems?: RecurringItem[];
   onSaveBudget: (month: string, totalBudget: number, categoryBudgets: Record<string, number>) => void;
 }
 
@@ -21,6 +22,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   currentMonth,
   budgets,
   transactions,
+  recurringItems = [],
   onSaveBudget,
 }) => {
   const [year, month] = currentMonth.split("-").map(Number);
@@ -40,15 +42,26 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     return res;
   });
 
+  // 1. 이번 달 실제 지출 합계 및 카테고리별 지출
   const categorySpentMap: Record<string, number> = {};
   let totalSpent = 0;
+  let fixedSpentAlready = 0; // 이미 지출 내역에 등록된 고정비
+
   transactions
     .filter((tx) => tx.date.startsWith(currentMonth) && tx.type === "expense")
     .forEach((tx) => {
       categorySpentMap[tx.category] = (categorySpentMap[tx.category] || 0) + tx.amount;
       totalSpent += tx.amount;
+      if (tx.isFixed) {
+        fixedSpentAlready += tx.amount;
+      }
     });
 
+  // 2. 이번 달 활성 고정비 총액
+  const activeRecurringExpenses = recurringItems.filter(r => r.isActive && r.type === "expense");
+  const totalMonthlyFixedBudget = activeRecurringExpenses.reduce((sum, r) => sum + r.amount, 0);
+
+  // 날짜 계산
   const today = new Date();
   const daysInMonth = new Date(year, month, 0).getDate();
   const currentDay = (today.getFullYear() === year && today.getMonth() + 1 === month) 
@@ -56,9 +69,18 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     : 1;
   const remainingDays = Math.max(1, daysInMonth - currentDay + 1);
 
+  // 3. 고정비를 제외한 실질 잔여 예산 산출 로직
   const totalBudgetAmount = currentBudget.totalBudget || 0;
-  const remainingTotalBudget = Math.max(0, totalBudgetAmount - totalSpent);
-  const dailyRecommendedExpense = Math.floor(remainingTotalBudget / remainingDays);
+  
+  // 고정비를 제외하고 이번 달 앞으로 쓸 수 있는 실질 순수 잔여 예산
+  const remainingBudgetExcludingFixed = Math.max(
+    0, 
+    totalBudgetAmount - totalSpent - (totalSpent >= totalMonthlyFixedBudget ? 0 : Math.max(0, totalMonthlyFixedBudget - fixedSpentAlready))
+  );
+
+  // 하루 권장 지출액 (고정비 제외한 순수 잔여 예산 기준)
+  const dailyRecommendedExpense = Math.floor(remainingBudgetExcludingFixed / remainingDays);
+  
   const totalSpendPercent = totalBudgetAmount > 0 
     ? Math.round((totalSpent / totalBudgetAmount) * 100) 
     : 0;
@@ -97,7 +119,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
             <span>{month}월 예산 목표 관리</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            월별 지출 한도를 설정하고 카테고리별 예산 소진 상황을 실시간으로 추적하세요.
+            월 고정비를 제외한 실질 가용 잔여 예산과 하루 권장 지출액을 산출합니다.
           </p>
         </div>
 
@@ -138,7 +160,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-              이번 달 총 지출 목표 예산
+              이번 달 총 지출 목표 예산 (고정비 포함 전체 한도)
             </label>
             <div className="relative max-w-sm">
               <input
@@ -152,6 +174,12 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                 원
               </span>
             </div>
+            {totalMonthlyFixedBudget > 0 && (
+              <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1">
+                <Repeat className="w-3.5 h-3.5" />
+                <span>등록된 월 고정비({formatKRW(totalMonthlyFixedBudget)})를 제외한 실질 생활비는 <strong>{formatKRW(Math.max(0, (parseInt(editTotalBudget) || 0) - totalMonthlyFixedBudget))}</strong> 입니다.</span>
+              </p>
+            )}
           </div>
 
           <div>
@@ -197,7 +225,9 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
         </form>
       ) : (
         <>
+          {/* Top 3 Summary Cards (고정비 제외 실질 잔여 예산 반영) */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* 1. 총 예산 대비 지출 현황 */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
               <span className="text-xs font-semibold text-slate-400">총 예산 대비 지출</span>
               <div className="text-2xl font-black text-white mt-1">
@@ -221,47 +251,62 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
               </div>
             </div>
 
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
-              <span className="text-xs font-semibold text-slate-400">남은 잔여 예산</span>
+            {/* 2. 남은 잔여 예산 (고정비 제외 산출) */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400">남은 잔여 예산 (고정비 제외)</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                  실질 가용액
+                </span>
+              </div>
+
               <div className={`text-2xl font-black mt-1 ${
-                totalSpent > totalBudgetAmount && totalBudgetAmount > 0 ? "text-rose-400" : "text-sky-400"
+                remainingBudgetExcludingFixed <= 0 && totalBudgetAmount > 0 ? "text-rose-400" : "text-sky-400"
               }`}>
                 {totalBudgetAmount > 0 ? (
-                  totalSpent > totalBudgetAmount 
-                    ? `-${formatKRW(totalSpent - totalBudgetAmount)} 초과` 
-                    : formatKRW(remainingTotalBudget)
+                  remainingBudgetExcludingFixed <= 0 
+                    ? `0원 (한도 소진)` 
+                    : formatKRW(remainingBudgetExcludingFixed)
                 ) : (
                   "예산 미설정"
                 )}
               </div>
-              <div className="text-xs text-slate-400 mt-3 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                <span>이번 달 {remainingDays}일 남음 ({currentDay}/{daysInMonth}일)</span>
+
+              <div className="text-xs text-slate-400 mt-2.5 flex items-center justify-between border-t border-slate-800/80 pt-2">
+                <span className="flex items-center gap-1">
+                  <Repeat className="w-3 h-3 text-amber-400" />
+                  <span>월 고정비: <strong className="text-slate-300">{formatKRW(totalMonthlyFixedBudget)}</strong></span>
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  {remainingDays}일 남음
+                </span>
               </div>
             </div>
 
+            {/* 3. 오늘 하루 권장 지출액 (고정비 제외 실질 잔여 기준) */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400">오늘 하루 권장 지출액</span>
+                <span className="text-xs font-semibold text-slate-400">하루 권장 생활비 (고정비 제외)</span>
                 <Zap className="w-4 h-4 text-amber-400" />
               </div>
               <div className="text-2xl font-black text-amber-400 mt-1">
                 {totalBudgetAmount > 0 ? formatKRW(dailyRecommendedExpense) : "0원"}
               </div>
-              <div className="text-xs text-slate-400 mt-3">
+              <div className="text-xs text-slate-400 mt-2.5 border-t border-slate-800/80 pt-2">
                 {totalBudgetAmount > 0 ? (
-                  totalSpent > totalBudgetAmount ? (
-                    <span className="text-rose-400 font-semibold">⚠️ 예산 초과 상태입니다.</span>
+                  remainingBudgetExcludingFixed <= 0 ? (
+                    <span className="text-rose-400 font-semibold">⚠️ 예산 초과 상태입니다. 지출을 점검하세요.</span>
                   ) : (
-                    <span>하루 이 금액 내로 지출하면 예산 준수 가능!</span>
+                    <span>하루 <strong>{formatKRW(dailyRecommendedExpense)}</strong> 내로 지출 시 목표 달성!</span>
                   )
                 ) : (
-                  <span>예산을 설정하면 권장액이 계산됩니다.</span>
+                  <span>예산을 설정하면 권장액이 자동 산출됩니다.</span>
                 )}
               </div>
             </div>
           </div>
 
+          {/* 카테고리별 예산 소진 현황 */}
           <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div>
