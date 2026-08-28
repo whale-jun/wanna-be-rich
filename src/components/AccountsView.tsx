@@ -17,7 +17,8 @@ import {
   Calendar,
   Sparkles,
   Clock,
-  RefreshCw
+  RefreshCw,
+  Building2
 } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 
@@ -35,6 +36,7 @@ interface AccountsViewProps {
   onUpdateInvestment?: (id: string, inv: Partial<Investment>) => void;
   onDeleteInvestment: (id: string) => void;
   onTransfer: (fromId: string, toId: string, amount: number, memo: string) => void;
+  onOpenBankConnect?: () => void;
 }
 
 export const AccountsView: React.FC<AccountsViewProps> = ({
@@ -51,6 +53,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   onUpdateInvestment,
   onDeleteInvestment,
   onTransfer,
+  onOpenBankConnect,
 }) => {
   // 🎯 통장 / 저축 / 투자 세부 페이지 전환 탭 상태
   const [activeAssetTab, setActiveAssetTab] = useState<"bank" | "savings" | "investment">("bank");
@@ -586,6 +589,16 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              {onOpenBankConnect && (
+                <button
+                  type="button"
+                  onClick={onOpenBankConnect}
+                  className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-xl text-xs font-bold transition shadow-sm"
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>은행/카드 자동연동</span>
+                </button>
+              )}
               <button
                 onClick={() => setIsTransferModalOpen(true)}
                 className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition"

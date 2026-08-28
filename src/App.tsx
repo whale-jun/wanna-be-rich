@@ -16,9 +16,10 @@ import { DataManagementModal } from "./components/DataManagementModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { LockScreen } from "./components/LockScreen";
 import { AutoSyncGuideModal } from "./components/AutoSyncGuideModal";
+import { BankConnectModal } from "./components/BankConnectModal";
 import { SplashScreen } from "./components/SplashScreen";
 import { parseMultipleSms, convertParsedToTransactions } from "./utils/smsParser";
-import type { Transaction } from "./types/financial";
+import type { Transaction, Account } from "./types/financial";
 import { Plus } from "lucide-react";
 
 export function App() {
@@ -83,6 +84,7 @@ export function App() {
   const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAutoSyncOpen, setIsAutoSyncOpen] = useState(false);
+  const [isBankConnectOpen, setIsBankConnectOpen] = useState(false);
 
   // Quick Open Handlers
   const handleOpenAddModal = (defaultDate?: string) => {
@@ -107,6 +109,12 @@ export function App() {
       toAccountId: toId,
       memo: memo || "계좌 간 이체",
     });
+  };
+
+  // ⚡ 마이데이터 은행/카드 연동 데이터 수신 핸들러
+  const handleBankSyncData = (newAccounts: Omit<Account, "id">[], newTransactions: Omit<Transaction, "id">[]) => {
+    newAccounts.forEach((acc) => addAccount(acc));
+    newTransactions.forEach((tx) => addTransaction(tx));
   };
 
   // 아이폰 단축어(Shortcuts) 딥링크/URL 파라미터 자동 수신 (?sms=...)
@@ -138,11 +146,12 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 antialiased flex flex-col font-sans transition-colors duration-200 pb-20 md:pb-6 overflow-x-hidden w-full">
-      {/* 🚀 App Launch Initial Splash Screen Animation */}
+      {/* Splash Screen (Shown on initial launch) */}
       {showSplash && (
         <SplashScreen onFinish={() => setShowSplash(false)} />
       )}
 
+      {/* Top Universal Navbar */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -150,11 +159,10 @@ export function App() {
         setCurrentMonth={setCurrentMonth}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenAutoSyncModal={() => setIsAutoSyncOpen(true)}
-        isPasswordEnabled={isPasswordEnabled}
-        onLockApp={lockApp}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+      {/* Main Screen Content View */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 pt-4">
         {activeTab === "dashboard" && (
           <Dashboard
             currentMonth={currentMonth}
@@ -164,6 +172,7 @@ export function App() {
             budgets={budgets}
             onNavigateTab={setActiveTab}
             onOpenAddModal={() => handleOpenAddModal()}
+            onOpenBankConnect={() => setIsBankConnectOpen(true)}
           />
         )}
 
@@ -215,6 +224,7 @@ export function App() {
             onUpdateInvestment={updateInvestment}
             onDeleteInvestment={deleteInvestment}
             onTransfer={handleTransfer}
+            onOpenBankConnect={() => setIsBankConnectOpen(true)}
           />
         )}
 
@@ -255,6 +265,13 @@ export function App() {
         accounts={accounts}
         editingTx={editingTransaction}
         defaultDate={modalDefaultDate}
+      />
+
+      {/* ⚡ 뱅크샐러드형 마이데이터 은행 & 카드 연동 모달 */}
+      <BankConnectModal
+        isOpen={isBankConnectOpen}
+        onClose={() => setIsBankConnectOpen(false)}
+        onSyncData={handleBankSyncData}
       />
 
       {/* Auto Sync Center Modal */}
