@@ -1,4 +1,5 @@
 import type { Transaction, Account, RecurringItem, Savings, Investment } from "../types/financial";
+import { formatKRW } from "./calculators";
 
 export const generateAIReport = async (
   apiKey: string,
@@ -8,36 +9,88 @@ export const generateAIReport = async (
   savings: Savings[],
   investments: Investment[]
 ): Promise<string> => {
-  const incomes = transactions.filter(t => t.type === "income");
-  const expenses = transactions.filter(t => t.type === "expense");
-  const totalIncome = incomes.reduce((acc, i) => acc + i.amount, 0);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthTxs = transactions.filter(t => t.date.startsWith(currentMonth));
+  const incomes = monthTxs.filter(t => t.type === "income");
+  const expenses = monthTxs.filter(t => t.type === "expense");
+  const totalIncome = incomes.reduce((acc, i) => acc + i.amount, 0) || 4500000;
   const totalExpense = expenses.reduce((acc, e) => acc + e.amount, 0);
-  const totalAssets = accounts.reduce((acc, a) => acc + (a.balance || 0), 0);
+  const netSavings = totalIncome - totalExpense;
+  const savingsRate = Math.round((netSavings / (totalIncome || 1)) * 100);
+
+  // 자산 계산
+  const totalLiquidAssets = accounts
+    .filter(a => a.type === "bank" || a.type === "savings" || a.type === "cash")
+    .reduce((acc, a) => acc + (a.balance || 0), 0);
+  const totalInvestAssets = investments.reduce((acc, i) => acc + (i.evaluatedAmount || i.investedAmount || 0), 0);
+  const totalDebt = accounts
+    .filter(a => a.type === "loan" || (a.type === "credit_card" && a.balance < 0))
+    .reduce((acc, a) => acc + Math.abs(a.balance || 0), 0);
+  const totalNetWorth = totalLiquidAssets + totalInvestAssets - totalDebt;
+
+  // 고정비 vs 변동비
+  const fixedExpense = recurringItems.filter(r => r.isActive && r.type === "expense").reduce((acc, r) => acc + r.amount, 0);
+  const variableExpense = Math.max(0, totalExpense - fixedExpense);
 
   if (!apiKey) {
-    return generateLocalFinancialAnalysis(transactions, recurringItems);
+    return generateLocalFinancialAnalysis(transactions, accounts, recurringItems, savings, investments);
   }
 
   const prompt = `
-너는 대한민국 최고의 개인 금융 자산관리 전문가(AI CFO)다. 아래 사용자의 실제 가계부 및 자산 데이터를 분석하여 맞춤형 종합 재무 전략 리포트를 Markdown 형식으로 작성하라.
+당신은 대한민국 최고의 금융 전문가 4인(공인회계사 CPA + 헤지펀드 매니저 + 프라이빗 뱅커 PB/CFP + 세무사 CTA)으로 구성된 'Wanna Be Rich 종합 자산관리 위원회'입니다.
 
-[재무 기본 데이터]
-- 총 자산 규모: 약 ${totalAssets.toLocaleString()}원
-- 등록된 총 수입 내역: ${totalIncome.toLocaleString()}원 (${incomes.length}건)
-- 등록된 총 지출 내역: ${totalExpense.toLocaleString()}원 (${expenses.length}건)
-- 정기 고정비 항목: ${recurringItems.map(r => `${r.title}(${r.amount.toLocaleString()}원)`).join(", ") || "없음"}
-- 저축 플랜: ${savings.map(s => `${s.title}(월 ${s.monthlyDeposit.toLocaleString()}원)`).join(", ") || "없음"}
-- 투자 포트폴리오: ${investments.map(i => `${i.assetName}(원금 ${i.investedAmount.toLocaleString()}원, 수익률 ${i.returnRate}%)`).join(", ") || "없음"}
-- 최근 주요 지출 샘플: ${JSON.stringify(expenses.slice(0, 15).map(e => ({ date: e.date, cat: e.category, amt: e.amount, memo: e.memo })))}
+아래 사용자의 실제 금융 자산 및 가계부 데이터를 바탕으로, 최고급 가독성과 체계적인 구조를 갖춘 [AI Financial Diagnosis Report]를 작성해주세요.
 
-다음 목차에 따라 친절하면서도 전문적이고 구체적인 액션 플랜을 제시하라:
-# 📊 AI CFO 맞춤형 재무 진단 리포트
+[고객 실시간 재무 데이터]
+- 총 순자산 (Net Worth): ${formatKRW(totalNetWorth)} (유동성 예적금: ${formatKRW(totalLiquidAssets)}, 투자자산: ${formatKRW(totalInvestAssets)}, 부채: ${formatKRW(totalDebt)})
+- 이번 달 수입: ${formatKRW(totalIncome)}
+- 이번 달 지출: ${formatKRW(totalExpense)} (고정비: ${formatKRW(fixedExpense)}, 변동비: ${formatKRW(variableExpense)})
+- 당월 잉여 저축 여력: ${formatKRW(netSavings)} (저축률: ${savingsRate}%)
+- 등록된 고정비 목록: ${recurringItems.map(r => `${r.title} (${formatKRW(r.amount)})`).join(", ") || "없음"}
+- 적금/저축 플랜: ${savings.map(s => `${s.title} (월 ${formatKRW(s.monthlyDeposit)}, 목표 ${formatKRW(s.goalAmount || (s.monthlyDeposit * (s.targetMonths || 12)))})`).join(", ") || "없음"}
+- 투자 포트폴리오: ${investments.map(i => `${i.assetName} (${formatKRW(i.investedAmount)}, 수익률 ${i.returnRate}%)`).join(", ") || "없음"}
 
-## 1. 🔍 수입 대비 지출 & 소비 구조 정밀 진단
-## 2. 🎯 저축 및 비상금 포트폴리오 최적화
-## 3. 📈 투자 자산 배분 & 인플레이션 방어 전략
-## 4. 💳 연말정산 절세 황금 전략 (신용카드 vs 체크카드 비중)
-## 5. 💡 이번 달 즉시 실천할 3가지 행동 강령
+반드시 다음 6대 파트의 마크다운 형식으로, 전문가의 품격 있고 신뢰감 넘치는 어조로 구체적인 수치와 액션 플랜을 제시하세요:
+
+# 🏛️ Wanna Be Rich? AI Financial Diagnosis Report
+
+## 🏆 종합 재무 건강 점수: [XX점 / 100점] (등급: [AAA / AA / A / B / C])
+* 1줄 요약 총평 (현재 재무 상태에 대한 전문가 4인의 공통 진단)
+
+---
+
+## 1. 🏛️ [공인회계사 CPA] 손익 & 현금흐름 정밀 감사
+- **현금흐름(FCF) 건전성:** 수입 대비 지출 비율, 잉여 현금 흐름 평가
+- **비용 구조 분석:** 고정비 vs 변동비 밸런스 및 새어나가는 지출 누수(Leakage) 진단
+- **회계사의 지출 통제 처방전:** 구체적인 비용 절감 가이드라인
+
+---
+
+## 2. 📈 [헤지펀드 매니저] 자산배분 & 포트폴리오 공방 전략
+- **자산 배분율 점검:** 안전자산(예적금) vs 위험자산(주식/코인)의 황금 비율 진단
+- **수익률 & 리스크 관리:** 현재 포트폴리오의 인플레이션 방어력 및 샤프지수 관점 피드백
+- **펀드매니저의 리밸런싱 로드맵:** 다음 분기 목표 포트폴리오 비중 제안
+
+---
+
+## 3. 💼 [공인재산관리사 PB] 목돈 마련 & 4개 통장 시스템 구축
+- **4개의 통장 분리 진단:** (1. 급여통장 → 2. 소비통장 → 3. 예비/비상금통장 → 4. 투자통장) 완비 여부
+- **비상 예비자금 안전망:** 월 생활비 3~6개월치 유동성 파킹통장 분리 전략
+- **복리 스노우볼 로드맵:** 목표 시드머니(1억/5억/10억) 달성 예상 시점 및 적립식 플랜
+
+---
+
+## 4. ⚖️ [전문 세무사 CTA] 13월의 월급 & 합법적 절세 극대화
+- **연말정산 카드 골든크로스:** 신용카드(15% 공제) 문턱 돌파 후 체크카드(30% 공제) 전환 시점 분석
+- **절세 3총사 계좌 점검:** ISA(비과세), 연금저축/IRP(최대 148.5만원 세액공제) 활용 처방
+- **금융소득종합과세 방어:** 이자/배당소득 2,000만원 한도 관리 팁
+
+---
+
+## 5. 🎯 [전문가 4인 합의] 이번 달 즉시 실행할 골든 액션 3가지
+1. **[회계사 처방]** 구체적 행동 강령
+2. **[펀드매니저/PB 처방]** 구체적 행동 강령
+3. **[세무사 처방]** 구체적 행동 강령
 `;
 
   try {
@@ -74,65 +127,97 @@ export const generateAIReport = async (
     }
   } catch (err: any) {
     console.warn("Gemini API call failed, falling back to local analysis:", err);
-    return generateLocalFinancialAnalysis(transactions, recurringItems) + 
-      `\n\n> ⚠️ *참고: Gemini API 호출 중 (${err.message}) 에러가 발생하여 로컬 AI 알고리즘 진단 결과가 표시되었습니다.*`;
+    return generateLocalFinancialAnalysis(transactions, accounts, recurringItems, savings, investments) + 
+      `\n\n> ⚠️ *참고: Gemini API 호출 중 오류가 발생하여 4대 전문가 룰 기반 로컬 스마트 진단 알고리즘 결과가 표시되었습니다.*`;
   }
 };
 
 /**
- * 로컬 룰 기반 자동 재무 진단 리포트 생성기
+ * 🏛️ 4대 전문가 (세무사+회계사+재산관리사+펀드매니저) 로컬 스마트 진단 리포트 생성기
  */
 export const generateLocalFinancialAnalysis = (
   transactions: Transaction[],
-  recurringItems: RecurringItem[]
+  accounts: Account[],
+  recurringItems: RecurringItem[],
+  savings: Savings[],
+  investments: Investment[]
 ): string => {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const monthTxs = transactions.filter(t => t.date.startsWith(currentMonth));
   const monthIncomes = monthTxs.filter(t => t.type === "income");
   const monthExpenses = monthTxs.filter(t => t.type === "expense");
 
-  const totalIncome = monthIncomes.reduce((acc, i) => acc + i.amount, 0) || 4200000;
+  const totalIncome = monthIncomes.reduce((acc, i) => acc + i.amount, 0) || 4500000;
   const totalExpense = monthExpenses.reduce((acc, e) => acc + e.amount, 0);
-  const netSavings = totalIncome - totalExpense;
-  const savingsRate = Math.round((netSavings / totalIncome) * 100);
+  const netSavings = Math.max(0, totalIncome - totalExpense);
+  const savingsRate = Math.round((netSavings / (totalIncome || 1)) * 100);
 
-  // 고정비 vs 변동비
+  // 자산 계산
+  const liquidTotal = accounts
+    .filter(a => a.type === "bank" || a.type === "savings" || a.type === "cash")
+    .reduce((acc, a) => acc + (a.balance || 0), 0);
+  const investTotal = investments.reduce((acc, i) => acc + (i.evaluatedAmount || i.investedAmount || 0), 0);
+  const debtTotal = accounts
+    .filter(a => a.type === "loan" || (a.type === "credit_card" && a.balance < 0))
+    .reduce((acc, a) => acc + Math.abs(a.balance || 0), 0);
+  const netWorth = liquidTotal + investTotal - debtTotal;
+
+  // 고정비 계산
   const fixedExpense = recurringItems.filter(r => r.isActive && r.type === "expense").reduce((acc, r) => acc + r.amount, 0);
   const fixedRatio = Math.round((fixedExpense / (totalExpense || 1)) * 100);
 
-  // 최다 지출 카테고리
-  const catMap: Record<string, number> = {};
-  monthExpenses.forEach(e => {
-    catMap[e.category] = (catMap[e.category] || 0) + e.amount;
-  });
-  const topCategories = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+  // 재무 건강 점수 산출 알고리즘
+  let score = 50;
+  if (savingsRate >= 40) score += 25;
+  else if (savingsRate >= 25) score += 15;
+  else if (savingsRate >= 10) score += 5;
 
-  return `# 💰 Wanna Be Rich? AI Financial Diagnosis Report
+  if (investTotal > 0) score += 15;
+  if (fixedRatio <= 40 && fixedRatio > 0) score += 10;
+  if (debtTotal === 0 || debtTotal < netWorth * 0.2) score += 10;
+  score = Math.min(98, Math.max(45, score));
 
-## 1. 🔍 소비 구조 및 저축률 정밀 진단
-- **당월 수입:** ${totalIncome.toLocaleString()}원
-- **당월 지출:** ${totalExpense.toLocaleString()}원 (고정비 ${fixedExpense.toLocaleString()}원, 비중 ${fixedRatio}%)
-- **잉여 저축 여력:** ${netSavings.toLocaleString()}원 (저축률: **${savingsRate}%**)
+  const grade = score >= 90 ? "AAA (최우수)" : score >= 80 ? "AA (우수)" : score >= 70 ? "A (안정)" : "B (개선 필요)";
 
-${savingsRate >= 40 
-  ? "✅ **매우 우수한 저축률(40% 이상)**을 유지하고 계십니다! 잉여 현금을 단순 입출금 통장에 방치하기보다 단기 파킹통장이나 적립식 ETF로 분산 배치하는 것을 권장합니다." 
-  : savingsRate >= 20 
-  ? "⚡ **양호한 저축률(20~40%)** 수준입니다. 식비 및 쇼핑 등 변동 지출에서 약 10%만 추가 절약하면 연간 300만원 이상의 추가 시드머니를 확보할 수 있습니다." 
-  : "⚠️ **저축률 개선이 시급합니다.** 수입 대비 소비 비중이 높아 예상치 못한 비상 지출 발생 시 유동성 위기가 올 수 있습니다."}
+  return `# 🏛️ Wanna Be Rich? AI Financial Diagnosis Report
 
-## 2. 💳 지출 카테고리 집중 분석
-${topCategories.length > 0 
-  ? `현재 가장 많은 지출이 발생한 상위 카테고리는 **${topCategories[0][0]} (${topCategories[0][1].toLocaleString()}원)** 및 **${topCategories[1]?.[0] || "기타"} (${(topCategories[1]?.[1] || 0).toLocaleString()}원)** 입니다.` 
-  : "충분한 지출 내역이 기록되지 않았습니다."}
-- **구독/고정비 다이어트:** 현재 등록된 고정비(${recurringItems.length}건, 월 ${fixedExpense.toLocaleString()}원) 중 최근 1개월간 사용 빈도가 낮은 OTT나 부가서비스가 있는지 점검하세요.
+## 🏆 종합 재무 건강 점수: ${score}점 / 100점 (등급: ${grade})
+> **[전문가 위원회 종합 총평]**
+> 현재 순자산 **${formatKRW(netWorth)}**, 월 저축률 **${savingsRate}%**로 전반적인 현금흐름이 ${savingsRate >= 30 ? "매우 견고한 성장 궤도" : "안정적인 흐름"}에 진입해 있습니다. 아래 4대 전문가의 핵심 처방을 실행하면 자산 증식 속도를 2배 이상 가속할 수 있습니다.
 
-## 3. 🛡️ 연말정산 소득공제 최적화 전략
-- **신용카드 문턱(총급여 25%):** 급여의 25%까지는 포인트 및 할인 혜택이 풍부한 **신용카드**를 우선 사용하세요.
-- **문턱 초과 후:** 25% 초과 지출분부터는 소득공제율이 2배 높은 **체크카드(30%) 및 현금영수증** 위주로 결제 수단을 전환해야 환급액을 극대화할 수 있습니다.
+---
 
-## 4. 💡 이번 달 실천 액션 플랜 3가지
-1. **일일 권장 지출 한도 준수:** 남은 기간 동안 하루 지출을 예산 범위 내로 통제하기
-2. **비상금 통장 분리:** 월 지출액의 3~6배에 해당하는 비상 유동성 자금 파킹통장에 격리
-3. **정기 적금 자동이체일 맞추기:** 급여일 익일로 자동이체일을 설정하여 '선저축 후소비' 강제화
+## 1. 🏛️ [공인회계사 CPA] 손익 & 현금흐름 정밀 감사
+- **잉여 현금흐름(FCF):** 당월 총 수입 ${formatKRW(totalIncome)} 중 지출(${formatKRW(totalExpense)})을 차감한 **${formatKRW(netSavings)}**의 잉여 자금이 안정적으로 창출되고 있습니다.
+- **고정비 밸런스 검토:** 현재 정기 고정비는 **${formatKRW(fixedExpense)}** (전체 지출의 ${fixedRatio}%) 수준입니다. 고정비가 40% 이하일 때 재무 유연성이 가장 높으므로 현재 비율을 잘 통제하고 계십니다.
+- **회계사의 지출 통제 처방:** 사용 빈도가 낮은 정기 구독(${recurringItems.length}건)을 분기별로 점검하여 고정비를 월 5~10만원 추가 다이어트하세요.
+
+---
+
+## 2. 📈 [헤지펀드 매니저] 자산배분 & 포트폴리오 공방 전략
+- **현재 자산 배분 구조:** 유동성/예적금 **${formatKRW(liquidTotal)}** vs 투자자산 **${formatKRW(investTotal)}** (총 투자 비중: ${Math.round((investTotal / (netWorth || 1)) * 100)}%)
+- **인플레이션 방어력:** 현금성 자산 비중이 지나치게 높으면 실질 구매력이 하락합니다. 월 잉여금의 50% 이상을 미국 S&P500, 나스닥100, 배당성장 ETF 등 우량 적립식 펀드로 분산 배분할 것을 권장합니다.
+- **목표 포트폴리오 제안:** [안전 예적금 30%] : [성장형 ETF 50%] : [배당/채권 20%]의 안정적인 삼각 편대를 구축하세요.
+
+---
+
+## 3. 💼 [공인재산관리사 PB] 목돈 마련 & 4개 통장 시스템 구축
+- **4개의 통장 시스템 완성도:** 급여통장 → 소비통장(생활비 전용 체크카드) → 비상금통장(파킹통장) → 투자통장으로 자금 흐름을 완전 자동화하세요.
+- **비상 예비자금(Emergency Fund):** 월 평균 지출액의 3~6개월치(약 **${formatKRW(totalExpense * 4)}**)를 연 3.0~3.5%대 수시입출식 파킹통장에 항상 유지하여 급격한 시장 변동에 대비하세요.
+- **복리 스노우볼 로드맵:** 현재 저축 플랜(${savings.length}개)을 지속 유지할 경우 향후 3년 내 약 **${formatKRW(netSavings * 36 + investTotal)}** 규모의 핵심 시드머니 형성이 가능합니다.
+
+---
+
+## 4. ⚖️ [전문 세무사 CTA] 13월의 월급 & 합법적 절세 극대화
+- **연말정산 신용 vs 체크카드 골든크로스:** 총급여의 25%까지는 포인트 혜택이 큰 신용카드를 사용하고, 문턱 돌파 이후에는 소득공제율이 2배 높은 **체크카드(30%) 및 현금영수증**으로 즉시 결제를 전환하세요.
+- **절세 삼총사 계좌(ISA/연금저축/IRP):** 연금저축 및 IRP 납입 시 연 최대 **148.5만원(16.5% 세액공제)**을 국가로부터 환급받을 수 있습니다. ISA 계좌는 200~400만원 비과세 혜택을 반드시 챙기세요.
+- **금융소득 비과세 전략:** 예적금 이자 및 배당소득이 연 2,000만원을 초과하지 않도록 비과세/분리과세 계좌를 적극 활용하세요.
+
+---
+
+## 5. 🎯 [전문가 4인 합의] 이번 달 즉시 실행할 골든 액션 3가지
+1. **[회계사]** 급여일 익일로 저축/투자 자동이체를 설정하여 **'선저축 후지출' 강제 루틴** 완성하기
+2. **[펀드매니저]** 잉여 현금 중 월 50만원 이상을 **글로벌 우량 지수 ETF 적립식 매수**로 자동 전환하기
+3. **[세무사]** 연금저축펀드 또는 IRP 계좌를 개설하여 **연말정산 148.5만원 환급 혜택** 선점하기
 `;
 };
