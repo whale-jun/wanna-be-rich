@@ -52,6 +52,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   onDeleteInvestment,
   onTransfer,
 }) => {
+  // 🎯 통장 / 저축 / 투자 세부 페이지 전환 탭 상태
+  const [activeAssetTab, setActiveAssetTab] = useState<"bank" | "savings" | "investment">("bank");
+
   // Account Modal
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -84,7 +87,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   const [savInterestType, setSavInterestType] = useState<"simple" | "compound">("simple");
   const [savTaxFree, setSavTaxFree] = useState<boolean>(false);
   const [savGoal, setSavGoal] = useState("");
-  const [autoCalculatedMsg, setAutoCalculatedMsg] = useState("");
+  const [_autoCalculatedMsg, setAutoCalculatedMsg] = useState("");
 
   // Investment Modal (Add / Edit)
   const [isInvModalOpen, setIsInvModalOpen] = useState(false);
@@ -137,9 +140,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   const netWorth = totalAssets - cardDebtTotal;
 
   const assetChartData = [
-    { name: "예금/현금", value: bankTotal, color: "#3b82f6" },
-    { name: "적금/청약", value: savingsTotal, color: "#ec4899" },
-    { name: "투자/주식", value: investmentTotal, color: "#8b5cf6" },
+    { name: "예금/현금", value: bankTotal, color: "#38bdf8" },
+    { name: "적금/청약", value: savingsTotal, color: "#f43f5e" },
+    { name: "투자/주식", value: investmentTotal, color: "#a855f7" },
   ].filter(d => d.value > 0);
 
   // Account Modal Handlers
@@ -405,91 +408,47 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Top Header */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Landmark className="w-5 h-5 text-emerald-400" />
-            <span>자산 & 계좌 관리</span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            은행 통장, 카드, 적금 목표, 주식 등 모든 금융 자산과 부채를 통합 관리하세요.
+      {/* Top Header & Net Worth Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Net Worth Stat Card */}
+        <div className="lg:col-span-2 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Landmark className="w-5 h-5 text-emerald-400" />
+              <h2 className="text-base sm:text-lg font-bold text-white">총 순자산 (Net Worth)</h2>
+            </div>
+            <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-semibold border border-slate-700">
+              통합 자산 관리
+            </span>
+          </div>
+
+          <div className="my-3">
+            <div className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight">
+              {formatKRW(netWorth)}
+            </div>
+            <div className="flex items-center gap-2 mt-2 text-xs text-slate-400 flex-wrap">
+              <span>총 자산: <strong className="text-slate-200">{formatKRW(totalAssets)}</strong></span>
+              <span>•</span>
+              <span>부채/카드 대금: <strong className="text-rose-400">{formatKRW(cardDebtTotal)}</strong></span>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-500">
+            아래 <strong>통장, 저축, 투자</strong> 버튼을 눌러 각 자산의 세부 내역을 확인하고 관리하세요.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsTransferModalOpen(true)}
-            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition"
-          >
-            <ArrowRightLeft className="w-4 h-4 text-sky-400" />
-            <span>계좌 간 이체</span>
-          </button>
-          <button
-            onClick={openAddAccountModal}
-            className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/20 transition"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>새 계좌/카드 추가</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-            <span className="text-xs font-semibold text-slate-400">총 순자산 (Net Worth)</span>
-            <div className="text-3xl font-black text-emerald-400 mt-2">
-              {formatKRW(netWorth)}
-            </div>
-            <div className="text-xs text-slate-400 mt-2">
-              자산 {formatKRW(totalAssets)} - 부채/카드 {formatKRW(cardDebtTotal)}
-            </div>
-          </div>
-
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
-            <span className="text-xs font-semibold text-slate-400">입출금 통장 / 현금</span>
-            <div className="text-2xl font-black text-sky-400 mt-2">
-              {formatKRW(bankTotal)}
-            </div>
-            <div className="text-xs text-slate-400 mt-2">
-              언제든 즉시 사용 가능한 유동성 자산
-            </div>
-          </div>
-
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
-            <span className="text-xs font-semibold text-slate-400">적금 / 예금 / 청약</span>
-            <div className="text-2xl font-black text-pink-400 mt-2">
-              {formatKRW(savingsTotal)}
-            </div>
-            <div className="text-xs text-slate-400 mt-2">
-              목돈 마련 및 이자 수익 목적 자산 ({savings.length}개 플랜)
-            </div>
-          </div>
-
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
-            <span className="text-xs font-semibold text-slate-400">투자 / 주식 / 가상자산</span>
-            <div className="text-2xl font-black text-purple-400 mt-2">
-              {formatKRW(investmentTotal)}
-            </div>
-            <div className="text-xs text-slate-400 mt-2">
-              실시간 당일 주가 & 수익률 자동 추적 ({investments.length}개 종목)
-            </div>
-          </div>
-        </div>
-
         {/* Portfolio Pie Chart */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col justify-between">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <PieIcon className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+              <PieIcon className="w-3.5 h-3.5 text-emerald-400" />
               <span>자산 포트폴리오 비중</span>
             </h3>
           </div>
 
           {assetChartData.length > 0 ? (
-            <div className="h-44 w-full relative my-2">
+            <div className="h-32 w-full relative my-1">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -498,8 +457,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    innerRadius={45}
-                    outerRadius={68}
+                    innerRadius={36}
+                    outerRadius={56}
                     paddingAngle={4}
                   >
                     {assetChartData.map((entry) => (
@@ -507,7 +466,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: "12px", color: "#fff" }}
+                    contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: "12px", color: "#fff", fontSize: "11px" }}
                     formatter={(val: any) => [formatKRW(Number(val)), ""]}
                   />
                 </PieChart>
@@ -515,115 +474,227 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             </div>
           ) : null}
 
-          <div className="space-y-1.5 text-xs">
+          <div className="grid grid-cols-3 gap-1 text-[11px] text-center pt-1 border-t border-slate-800/80">
             {assetChartData.map((d) => (
-              <div key={d.name} className="flex justify-between items-center bg-slate-950/40 p-1.5 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                  <span className="text-slate-300">{d.name}</span>
+              <div key={d.name} className="truncate">
+                <div className="flex items-center justify-center gap-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
+                  <span className="text-slate-400 text-[10px] truncate">{d.name}</span>
                 </div>
-                <span className="font-bold text-slate-200">
+                <div className="font-bold text-slate-200 mt-0.5">
                   {totalAssets > 0 ? Math.round((d.value / totalAssets) * 100) : 0}%
-                </span>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Accounts List */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <h3 className="text-base font-bold text-white">등록된 계좌 및 카드 ({accounts.length}개)</h3>
-        </div>
+      {/* 🔘 3개 대형 카테고리 전환 버튼 (통장 / 저축 / 투자) */}
+      <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+        {/* 1. 통장 / 계좌 버튼 */}
+        <button
+          type="button"
+          onClick={() => setActiveAssetTab("bank")}
+          className={`p-3.5 sm:p-4 rounded-2xl flex flex-col justify-between transition-all duration-200 text-left border cursor-pointer ${
+            activeAssetTab === "bank"
+              ? "bg-slate-900 border-sky-500 shadow-lg shadow-sky-500/20 ring-2 ring-sky-500/30 scale-[1.02]"
+              : "bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/80 opacity-80 hover:opacity-100"
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
+              <Landmark className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+              {accounts.length}개
+            </span>
+          </div>
+          <div className="mt-3">
+            <span className="text-xs sm:text-sm font-bold text-slate-300 block">통장 / 계좌</span>
+            <div className="text-base sm:text-xl font-black text-sky-400 mt-0.5 tracking-tight truncate">
+              {formatKRW(bankTotal)}
+            </div>
+          </div>
+        </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {accounts.map((acc) => {
-            const isCard = acc.type === "credit_card";
-            return (
-              <div
-                key={acc.id}
-                className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between hover:border-slate-700 transition relative group"
+        {/* 2. 저축 / 적금 버튼 */}
+        <button
+          type="button"
+          onClick={() => setActiveAssetTab("savings")}
+          className={`p-3.5 sm:p-4 rounded-2xl flex flex-col justify-between transition-all duration-200 text-left border cursor-pointer ${
+            activeAssetTab === "savings"
+              ? "bg-slate-900 border-rose-500 shadow-lg shadow-rose-500/20 ring-2 ring-rose-500/30 scale-[1.02]"
+              : "bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/80 opacity-80 hover:opacity-100"
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400">
+              <PiggyBank className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+              {savings.length}개 플랜
+            </span>
+          </div>
+          <div className="mt-3">
+            <span className="text-xs sm:text-sm font-bold text-slate-300 block">적금 / 저축</span>
+            <div className="text-base sm:text-xl font-black text-rose-400 mt-0.5 tracking-tight truncate">
+              {formatKRW(savingsTotal)}
+            </div>
+          </div>
+        </button>
+
+        {/* 3. 투자 / 주식 버튼 */}
+        <button
+          type="button"
+          onClick={() => setActiveAssetTab("investment")}
+          className={`p-3.5 sm:p-4 rounded-2xl flex flex-col justify-between transition-all duration-200 text-left border cursor-pointer ${
+            activeAssetTab === "investment"
+              ? "bg-slate-900 border-purple-500 shadow-lg shadow-purple-500/20 ring-2 ring-purple-500/30 scale-[1.02]"
+              : "bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/80 opacity-80 hover:opacity-100"
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+              {investments.length}개 종목
+            </span>
+          </div>
+          <div className="mt-3">
+            <span className="text-xs sm:text-sm font-bold text-slate-300 block">투자 / 주식</span>
+            <div className="text-base sm:text-xl font-black text-purple-400 mt-0.5 tracking-tight truncate">
+              {formatKRW(investmentTotal)}
+            </div>
+          </div>
+        </button>
+      </div>
+
+      {/* 📄 [세부 페이지 1] 통장 / 계좌 관리 세부 화면 */}
+      {activeAssetTab === "bank" && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-lg space-y-5 animate-in fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+            <div>
+              <div className="flex items-center gap-2">
+                <Landmark className="w-5 h-5 text-sky-400" />
+                <h3 className="text-base sm:text-lg font-bold text-white">등록된 통장 & 카드 ({accounts.length}개)</h3>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                입출금 통장, 신용카드, 체크카드, 대출 계좌를 관리하고 계좌 간 이체를 실행하세요.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => setIsTransferModalOpen(true)}
+                className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition"
               >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-300 border border-slate-700">
-                      {acc.institution || acc.type}
-                    </span>
-                    <div className="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition">
-                      <button
-                        onClick={() => openEditAccountModal(acc)}
-                        className="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition"
-                        title="계좌 수정"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => onDeleteAccount(acc.id)}
-                        className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition"
-                        title="계좌 삭제"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                <ArrowRightLeft className="w-3.5 h-3.5 text-sky-400" />
+                <span>계좌 간 이체</span>
+              </button>
+              <button
+                onClick={openAddAccountModal}
+                className="flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 text-slate-950 px-3.5 py-2 rounded-xl text-xs font-bold shadow-lg shadow-sky-500/20 transition"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>새 계좌/카드 추가</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {accounts.map((acc) => {
+              const isCard = acc.type === "credit_card";
+              return (
+                <div
+                  key={acc.id}
+                  className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between hover:border-slate-700 transition relative group"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                        {acc.institution || acc.type}
+                      </span>
+                      <div className="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition">
+                        <button
+                          onClick={() => openEditAccountModal(acc)}
+                          className="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition"
+                          title="계좌 수정"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteAccount(acc.id)}
+                          className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition"
+                          title="계좌 삭제"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <h4 className="text-base font-bold text-white truncate">{acc.name}</h4>
+                      {acc.accountNumber && (
+                        <p className="text-xs text-slate-500 mt-0.5 font-mono">{acc.accountNumber}</p>
+                      )}
                     </div>
                   </div>
 
-                  <div className="mt-3">
-                    <h4 className="text-base font-bold text-white truncate">{acc.name}</h4>
-                    {acc.accountNumber && (
-                      <p className="text-xs text-slate-500 mt-0.5 font-mono">{acc.accountNumber}</p>
+                  <div className="mt-4 pt-3 border-t border-slate-800/80">
+                    <div className="text-xs text-slate-400">
+                      {isCard ? "이번달 결제 예정액" : "현재 잔액"}
+                    </div>
+                    <div className={`text-lg font-black mt-0.5 ${
+                      isCard ? "text-rose-400" : "text-emerald-400"
+                    }`}>
+                      {formatKRW(Math.abs(acc.balance))}
+                    </div>
+
+                    {isCard && acc.creditLimit && (
+                      <div className="text-[11px] text-slate-500 mt-1 flex justify-between">
+                        <span>한도 {formatKRW(acc.creditLimit)}</span>
+                        {acc.paymentDay && <span>매월 {acc.paymentDay}일 결제</span>}
+                      </div>
                     )}
                   </div>
                 </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-800/80">
-                  <div className="text-xs text-slate-400">
-                    {isCard ? "이번달 결제 예정액" : "현재 잔액"}
-                  </div>
-                  <div className={`text-lg font-black mt-0.5 ${
-                    isCard ? "text-rose-400" : "text-emerald-400"
-                  }`}>
-                    {formatKRW(Math.abs(acc.balance))}
-                  </div>
-
-                  {isCard && acc.creditLimit && (
-                    <div className="text-[11px] text-slate-500 mt-1 flex justify-between">
-                      <span>한도 {formatKRW(acc.creditLimit)}</span>
-                      {acc.paymentDay && <span>매월 {acc.paymentDay}일 결제</span>}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Savings & Investments Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Savings & 목돈 플랜 */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <div className="flex items-center gap-2">
-              <PiggyBank className="w-5 h-5 text-pink-400" />
-              <div>
-                <h3 className="text-base font-bold text-white">적금 & 목돈 플랜</h3>
-                <p className="text-xs text-slate-400">시작일자 자동 회차 계산, 약정 개월수, 단리/복리 만기 수령액</p>
+      {/* 📄 [세부 페이지 2] 적금 / 저축 세부 화면 */}
+      {activeAssetTab === "savings" && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-lg space-y-5 animate-in fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+            <div>
+              <div className="flex items-center gap-2">
+                <PiggyBank className="w-5 h-5 text-rose-400" />
+                <h3 className="text-base sm:text-lg font-bold text-white">적금 & 목돈 플랜 ({savings.length}개)</h3>
               </div>
+              <p className="text-xs text-slate-400 mt-1">
+                시작일자 자동 회차 계산, 약정 개월수, 단리/복리 만기 수령액 및 납입 현황을 추적합니다.
+              </p>
             </div>
+
             <button
               onClick={openAddSavingsModal}
-              className="text-xs bg-pink-500/10 hover:bg-pink-500/20 text-pink-300 border border-pink-500/30 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 transition shadow-sm"
+              className="flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-lg shadow-rose-500/20 transition self-start sm:self-auto"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4 stroke-[3]" />
               <span>적금 추가</span>
             </button>
           </div>
 
           <div className="space-y-4">
             {savings.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 text-xs">
-                등록된 적금 플랜이 없습니다. 상단의 '적금 추가' 버튼을 눌러보세요!
+              <div className="text-center py-12 text-slate-500 text-xs flex flex-col items-center">
+                <PiggyBank className="w-10 h-10 mb-2 opacity-40 text-rose-400" />
+                <p className="text-sm font-semibold text-slate-400">등록된 적금 플랜이 없습니다.</p>
+                <p className="text-xs text-slate-500 mt-1">상단의 '적금 추가' 버튼을 눌러 새로운 적금을 등록해보세요!</p>
               </div>
             ) : (
               savings.map((s) => {
@@ -639,7 +710,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="text-sm font-bold text-white">{s.title || "정기 적금"}</h4>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-pink-500/10 text-pink-300 border border-pink-500/20">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20">
                             {target}개월 약정
                           </span>
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
@@ -683,13 +754,13 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     <div className="space-y-1.5 pt-1">
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-slate-300 font-semibold flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-pink-400" />
+                          <Calendar className="w-3.5 h-3.5 text-rose-400" />
                           <span>납입 회차: <strong>{current}회차</strong> / {target}회차 ({progress}%)</span>
                         </span>
                         {!isCompleted ? (
                           <button
                             onClick={() => handleIncrementSavingsMonth(s)}
-                            className="text-[11px] font-bold text-pink-400 hover:text-pink-300 bg-pink-500/10 hover:bg-pink-500/20 px-2 py-0.5 rounded-lg border border-pink-500/20 transition"
+                            className="text-[11px] font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 px-2 py-0.5 rounded-lg border border-rose-500/20 transition"
                             title="이번 달 납입 완료 (+1회차)"
                           >
                             +1회차 납입
@@ -703,7 +774,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
-                            isCompleted ? "bg-emerald-500" : "bg-gradient-to-r from-pink-500 to-rose-400"
+                            isCompleted ? "bg-emerald-500" : "bg-gradient-to-r from-rose-500 to-pink-400"
                           }`}
                           style={{ width: `${progress}%` }}
                         />
@@ -714,7 +785,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800/60">
                       <div className="bg-slate-900/60 p-2.5 rounded-xl">
                         <span className="text-[11px] text-slate-400 block">현재 누적 평가액 ({current}회차 납입)</span>
-                        <span className="text-sm font-bold text-pink-400">
+                        <span className="text-sm font-bold text-rose-400">
                           {formatKRW(s.totalAmount || (s.monthlyDeposit * current))}
                         </span>
                         <span className="text-[10px] text-slate-500 block mt-0.5">
@@ -732,34 +803,31 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         </span>
                       </div>
                     </div>
-
-                    {s.goalAmount && (
-                      <div className="text-[11px] text-slate-500 flex justify-between pt-1">
-                        <span>목표 금액: {formatKRW(s.goalAmount)}</span>
-                        <span className="text-emerald-400 font-semibold">{s.monthsToGoal}</span>
-                      </div>
-                    )}
                   </div>
                 );
               })
             )}
           </div>
         </div>
+      )}
 
-        {/* Investment Portfolio with Real-Time Stock Tracker */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-purple-400" />
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <span>투자 & 주식 포트폴리오</span>
+      {/* 📄 [세부 페이지 3] 투자 / 주식 세부 화면 */}
+      {activeAssetTab === "investment" && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-lg space-y-5 animate-in fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+            <div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-purple-400" />
+                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                  <span>투자 & 주식 포트폴리오 ({investments.length}개)</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">
                     실시간 시세 연동
                   </span>
                 </h3>
-                <p className="text-xs text-slate-400">삼성전자, 해외주식, 코인 당일 주가 기반 자동 수익률 연산</p>
               </div>
+              <p className="text-xs text-slate-400 mt-1">
+                국내주식, 미국주식, 가상자산의 당일 시세를 실시간 조회하고 평가손익을 자동 연산합니다.
+              </p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -767,18 +835,18 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                 type="button"
                 onClick={handleRefreshAllStockPrices}
                 disabled={isRefreshingPrices || investments.length === 0}
-                className="text-xs bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 transition shadow-sm disabled:opacity-50"
+                className="text-xs bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 px-3 py-2 rounded-xl font-bold flex items-center gap-1 transition shadow-sm disabled:opacity-50"
                 title="등록된 모든 종목의 실시간 주가 갱신"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingPrices ? "animate-spin text-purple-400" : ""}`} />
-                <span className="hidden sm:inline">시세 갱신</span>
+                <span>시세 갱신</span>
               </button>
 
               <button
                 onClick={openAddInvestmentModal}
-                className="text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 transition shadow-sm"
+                className="text-xs bg-purple-500 hover:bg-purple-600 text-white px-3.5 py-2 rounded-xl font-bold flex items-center gap-1 transition shadow-lg shadow-purple-500/20"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4 stroke-[3]" />
                 <span>종목 추가</span>
               </button>
             </div>
@@ -786,8 +854,10 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
           <div className="space-y-3">
             {investments.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 text-xs">
-                등록된 투자 종목이 없습니다. 상단의 '종목 추가' 버튼을 눌러보세요!
+              <div className="text-center py-12 text-slate-500 text-xs flex flex-col items-center">
+                <TrendingUp className="w-10 h-10 mb-2 opacity-40 text-purple-400" />
+                <p className="text-sm font-semibold text-slate-400">등록된 투자 종목이 없습니다.</p>
+                <p className="text-xs text-slate-500 mt-1">상단의 '종목 추가' 버튼을 눌러 새로운 종목을 추가해보세요!</p>
               </div>
             ) : (
               investments.map((i) => {
@@ -863,7 +933,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Account Modal */}
       {isAccountModalOpen && (
@@ -948,9 +1018,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     <label className="block text-xs font-semibold text-slate-400 mb-1">결제일 (1~31일)</label>
                     <input
                       type="number"
-                      min={1}
-                      max={31}
-                      placeholder="14"
+                      min="1"
+                      max="31"
+                      placeholder="15"
                       value={paymentDay}
                       onChange={(e) => setPaymentDay(e.target.value)}
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
@@ -960,29 +1030,29 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">계좌번호 (선택)</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">계좌번호/카드번호 (선택)</label>
                 <input
                   type="text"
-                  placeholder="예: 110-123-456789"
+                  placeholder="예: 3333-01-1234567"
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
                 />
               </div>
 
-              <div className="pt-2 flex gap-3">
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsAccountModalOpen(false)}
-                  className="flex-1 bg-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-semibold hover:bg-slate-700"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-semibold"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-500 text-slate-950 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-500/20"
+                  className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl text-xs shadow-lg shadow-emerald-500/20"
                 >
-                  저장
+                  {editingAccount ? "수정 완료" : "등록 완료"}
                 </button>
               </div>
             </form>
@@ -1006,7 +1076,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
             <form onSubmit={handleTransferSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">출금 계좌</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">출금 계좌 (보내는 통장)</label>
                 <select
                   value={transferFrom}
                   onChange={(e) => setTransferFrom(e.target.value)}
@@ -1014,26 +1084,24 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                 >
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.name} (잔액 {formatKRW(a.balance)})
+                      {a.name} ({formatKRW(a.balance)})
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">입금 계좌</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">입금 계좌 (받는 통장)</label>
                 <select
                   value={transferTo}
                   onChange={(e) => setTransferTo(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500"
                 >
-                  {accounts
-                    .filter((a) => a.id !== transferFrom)
-                    .map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name} (잔액 {formatKRW(a.balance)})
-                      </option>
-                    ))}
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} ({formatKRW(a.balance)})
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -1044,32 +1112,32 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   placeholder="0"
                   value={transferAmount ? Number(transferAmount).toLocaleString("ko-KR") : ""}
                   onChange={(e) => setTransferAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-lg font-bold text-white focus:outline-none focus:border-sky-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-white focus:outline-none focus:border-sky-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">메모</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">메모 (선택)</label>
                 <input
                   type="text"
-                  placeholder="예: 비상금 통장 이체, 적금 납입"
+                  placeholder="예: 생활비 통장 충전, 비상금 이체"
                   value={transferMemo}
                   onChange={(e) => setTransferMemo(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
                 />
               </div>
 
-              <div className="pt-2 flex gap-3">
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsTransferModalOpen(false)}
-                  className="flex-1 bg-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-semibold hover:bg-slate-700"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-semibold"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-sky-500 text-slate-950 py-2.5 rounded-xl text-xs font-bold hover:bg-sky-600 shadow-lg shadow-sky-500/20"
+                  className="px-5 py-2 bg-sky-500 hover:bg-sky-600 text-slate-950 font-bold rounded-xl text-xs shadow-lg shadow-sky-500/20"
                 >
                   이체 실행
                 </button>
@@ -1082,55 +1150,39 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       {/* Savings Add/Edit Modal */}
       {isSavModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-100">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-100 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 shrink-0">
               <h3 className="text-lg font-bold flex items-center gap-2">
-                <PiggyBank className="w-5 h-5 text-pink-400" />
-                <span>{editingSavings ? "적금 플랜 설정 변경" : "새 적금 & 목돈 플랜 추가"}</span>
+                <PiggyBank className="w-5 h-5 text-rose-400" />
+                <span>{editingSavings ? "적금 플랜 수정" : "새 적금 플랜 등록"}</span>
               </h3>
               <button onClick={() => setIsSavModalOpen(false)} className="text-slate-400 hover:text-slate-200">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSavingsSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <form onSubmit={handleSavingsSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">적금 / 플랜 이름</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">적금 상품명</label>
                 <input
                   type="text"
-                  placeholder="예: 청년도약계좌, 1억 모으기 적금"
+                  placeholder="예: 청년도약계좌, 카카오 26주 적금"
                   value={savTitle}
                   onChange={(e) => setSavTitle(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500"
                 />
-              </div>
-
-              {/* 가입 시작일 선택 */}
-              <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-pink-400" />
-                    <span>적금 가입 시작일</span>
-                  </label>
-                  <span className="text-[11px] text-pink-400 font-semibold">
-                    만기 예정: {previewMaturityDateStr}
-                  </span>
-                </div>
-                <input
-                  type="date"
-                  value={savStartDate}
-                  onChange={(e) => handleStartDateChange(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500"
-                />
-                {autoCalculatedMsg && (
-                  <p className="text-[11px] text-emerald-400 flex items-center gap-1 animate-in fade-in">
-                    <Sparkles className="w-3 h-3" />
-                    <span>{autoCalculatedMsg}</span>
-                  </p>
-                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">가입 시작일</label>
+                  <input
+                    type="date"
+                    value={savStartDate}
+                    onChange={(e) => handleStartDateChange(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 mb-1">월 납입액 (원)</label>
                   <input
@@ -1138,7 +1190,32 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     placeholder="500,000"
                     value={savDeposit ? Number(savDeposit).toLocaleString("ko-KR") : ""}
                     onChange={(e) => setSavDeposit(e.target.value.replace(/[^0-9]/g, ""))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:outline-none focus:border-pink-500"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">약정 개월수</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="600"
+                    value={savTargetMonths}
+                    onChange={(e) => setSavTargetMonths(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">현재 납입 회차</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max={savTargetMonths}
+                    value={savCurrentMonths}
+                    onChange={(e) => setSavCurrentMonths(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
                 <div>
@@ -1146,179 +1223,70 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   <input
                     type="number"
                     step="0.01"
-                    placeholder="4.5"
+                    min="0"
                     value={savRate}
                     onChange={(e) => setSavRate(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-pink-500 font-bold"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
               </div>
 
-              {/* 저축 약정 개월수 설정 */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-xs font-semibold text-slate-400">
-                    약정 저축 기간 (총 개월수)
-                  </label>
-                  <span className="text-xs text-pink-400 font-bold">{savTargetMonths}개월</span>
-                </div>
-                <div className="grid grid-cols-5 gap-1.5 mb-2">
-                  {["6", "12", "24", "36", "60"].map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => {
-                        setSavTargetMonths(m);
-                        const calcMonths = getElapsedMonthsFromStart(savStartDate, parseInt(m, 10));
-                        setSavCurrentMonths(String(calcMonths));
-                      }}
-                      className={`py-1.5 text-xs rounded-lg font-semibold transition ${
-                        savTargetMonths === m
-                          ? "bg-pink-500 text-slate-950 font-bold shadow-md shadow-pink-500/20"
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                      }`}
-                    >
-                      {m}개월
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="number"
-                  min={1}
-                  max={600}
-                  placeholder="직접 개월수 입력 (예: 12)"
-                  value={savTargetMonths}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    setSavTargetMonths(raw);
-                    if (raw) {
-                      const calcMonths = getElapsedMonthsFromStart(savStartDate, parseInt(raw, 10));
-                      setSavCurrentMonths(String(calcMonths));
-                    }
-                  }}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-pink-500"
-                />
-              </div>
-
-              {/* 현재 납입 완료 회차 */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-slate-400">
-                      현재 납입 완료 회차
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const targetMax = parseInt(savTargetMonths, 10) || 12;
-                        const calc = getElapsedMonthsFromStart(savStartDate, targetMax);
-                        setSavCurrentMonths(String(calc));
-                        setAutoCalculatedMsg(`시작일 기준 ${calc}회차로 재계산되었습니다.`);
-                      }}
-                      className="text-[10px] text-pink-400 hover:underline"
-                    >
-                      자동계산
-                    </button>
-                  </div>
-                  <input
-                    type="number"
-                    min={0}
-                    max={parseInt(savTargetMonths, 10) || 600}
-                    placeholder="0"
-                    value={savCurrentMonths}
-                    onChange={(e) => {
-                      setSavCurrentMonths(e.target.value);
-                      setAutoCalculatedMsg("");
-                    }}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-pink-500 font-bold text-pink-300"
-                  />
-                </div>
-                <div>
                   <label className="block text-xs font-semibold text-slate-400 mb-1">이자 계산 방식</label>
-                  <div className="grid grid-cols-2 gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setSavInterestType("simple")}
-                      className={`py-2 text-xs rounded-xl font-semibold transition ${
-                        savInterestType === "simple"
-                          ? "bg-pink-500/20 text-pink-300 border border-pink-500/40 font-bold"
-                          : "bg-slate-800 text-slate-400"
-                      }`}
-                    >
-                      단리
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSavInterestType("compound")}
-                      className={`py-2 text-xs rounded-xl font-semibold transition ${
-                        savInterestType === "compound"
-                          ? "bg-pink-500/20 text-pink-300 border border-pink-500/40 font-bold"
-                          : "bg-slate-800 text-slate-400"
-                      }`}
-                    >
-                      월복리
-                    </button>
-                  </div>
+                  <select
+                    value={savInterestType}
+                    onChange={(e) => setSavInterestType(e.target.value as "simple" | "compound")}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
+                  >
+                    <option value="simple">단리</option>
+                    <option value="compound">월복리</option>
+                  </select>
+                </div>
+                <div className="flex items-center pt-5">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300 font-medium">
+                    <input
+                      type="checkbox"
+                      checked={savTaxFree}
+                      onChange={(e) => setSavTaxFree(e.target.checked)}
+                      className="rounded text-rose-500 focus:ring-rose-500 w-4 h-4 bg-slate-800 border-slate-700"
+                    />
+                    <span>비과세 적용 (이자소득세 15.4% 면제)</span>
+                  </label>
                 </div>
               </div>
 
-              {/* 비과세 여부 및 목표 금액 */}
-              <div className="flex items-center justify-between pt-1">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={savTaxFree}
-                    onChange={(e) => setSavTaxFree(e.target.checked)}
-                    className="rounded text-pink-500 focus:ring-pink-500 bg-slate-800 border-slate-700 w-4 h-4"
-                  />
-                  <span className="text-xs text-slate-300">비과세 적용 (이자소득세 15.4% 면제)</span>
-                </label>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">최종 목표 금액 (선택)</label>
-                <input
-                  type="text"
-                  placeholder="예: 20,000,000"
-                  value={savGoal ? Number(savGoal).toLocaleString("ko-KR") : ""}
-                  onChange={(e) => setSavGoal(e.target.value.replace(/[^0-9]/g, ""))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-pink-500"
-                />
-              </div>
-
-              {/* 실시간 만기 예상액 미리보기 카드 */}
-              {previewDeposit > 0 && (
-                <div className="bg-gradient-to-br from-pink-950/40 to-slate-950 border border-pink-500/30 rounded-xl p-4 space-y-2">
-                  <div className="text-xs font-bold text-pink-300 flex justify-between">
-                    <span>💡 만기 시 예상 수령액 ({previewMaturityDateStr} 만기)</span>
-                    <span>{savTaxFree ? "비과세" : "일반과세(15.4%)"}</span>
-                  </div>
-                  <div className="flex justify-between items-baseline pt-1">
-                    <span className="text-xs text-slate-400">총 수령액 (원금+세후이자)</span>
-                    <span className="text-lg font-black text-emerald-400">
-                      {formatKRW(previewMaturityTotal)}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 flex justify-between border-t border-slate-800/80 pt-1.5">
-                    <span>만기 총 원금: {formatKRW(previewMaturityPrincipal)}</span>
-                    <span className="text-pink-400 font-semibold">세후 이자: +{formatKRW(previewMaturityInterest)}</span>
-                  </div>
+              {/* Real-time Calculation Summary Box */}
+              <div className="bg-slate-950/80 border border-rose-500/30 p-4 rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-xs text-rose-300 font-bold">
+                  <span className="flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>실시간 만기 시 예상 수령액</span>
+                  </span>
+                  <span>{previewMaturityDateStr} 만기</span>
                 </div>
-              )}
+                <div className="text-xl font-black text-emerald-400">
+                  {formatKRW(previewMaturityTotal)}
+                </div>
+                <div className="text-xs text-slate-400 flex justify-between pt-1 border-t border-slate-800">
+                  <span>원금 합계: {formatKRW(previewMaturityPrincipal)}</span>
+                  <span>세후 이자: +{formatKRW(previewMaturityInterest)}</span>
+                </div>
+              </div>
 
-              <div className="pt-2 flex gap-3">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsSavModalOpen(false)}
-                  className="flex-1 bg-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-semibold hover:bg-slate-700"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-semibold"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-pink-500 text-slate-950 py-2.5 rounded-xl text-xs font-bold hover:bg-pink-600 shadow-lg shadow-pink-500/20"
+                  className="px-5 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-lg shadow-rose-500/20"
                 >
-                  {editingSavings ? "설정 저장 완료" : "적금 플랜 등록"}
+                  {editingSavings ? "수정 완료" : "적금 저장"}
                 </button>
               </div>
             </form>
@@ -1326,14 +1294,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         </div>
       )}
 
-      {/* Investment Modal with Live Stock Presets & Price Calculator */}
+      {/* Investment Add/Edit Modal */}
       {isInvModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-100 flex flex-col max-h-[85vh]">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-100 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 shrink-0">
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-purple-400" />
-                <span>{editingInv ? "투자 종목 수정" : "새 주식 / 코인 종목 추가"}</span>
+                <span>{editingInv ? "투자 종목 수정" : "새 투자 종목 등록"}</span>
               </h3>
               <button onClick={() => setIsInvModalOpen(false)} className="text-slate-400 hover:text-slate-200">
                 <X className="w-5 h-5" />
@@ -1341,122 +1309,130 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             </div>
 
             <form onSubmit={handleInvestmentSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-              {/* Quick Popular Stock Presets */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-400">인기 종목 빠른 선택</label>
-                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-                  {POPULAR_STOCKS.map((stock) => (
-                    <button
-                      key={stock.ticker}
-                      type="button"
-                      onClick={() => handleSelectStockPreset(stock)}
-                      className={`text-[11px] px-2.5 py-1 rounded-lg border font-semibold transition ${
-                        invTicker === stock.ticker
-                          ? "bg-purple-500 text-slate-950 border-purple-400 font-bold"
-                          : "bg-slate-800/80 hover:bg-slate-800 text-slate-300 border-slate-700"
-                      }`}
-                    >
-                      {stock.name}
-                    </button>
-                  ))}
+              {/* Popular Stock Presets */}
+              {!editingInv && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    💡 빠른 종목 선택 (클릭 시 자동 입력)
+                  </label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {POPULAR_STOCKS.map((preset) => (
+                      <button
+                        key={preset.ticker}
+                        type="button"
+                        onClick={() => handleSelectStockPreset(preset)}
+                        className="text-xs bg-slate-800 hover:bg-purple-900/40 hover:text-purple-300 border border-slate-700 px-2.5 py-1 rounded-lg transition"
+                      >
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">종목/자산명</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">종목명</label>
                   <input
                     type="text"
-                    placeholder="예: 삼성전자, 엔비디아"
+                    placeholder="예: 삼성전자, Apple"
                     value={invName}
                     onChange={(e) => setInvName(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">종목코드 / 티커</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">티커/심볼</label>
                   <input
                     type="text"
                     placeholder="예: 005930, AAPL, BTC"
                     value={invTicker}
                     onChange={(e) => setInvTicker(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-purple-300 focus:outline-none focus:border-purple-500"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">매수 평단가 (원)</label>
-                  <input
-                    type="text"
-                    placeholder="70,000"
-                    value={invBuyPrice ? Number(invBuyPrice).toLocaleString("ko-KR") : ""}
-                    onChange={(e) => setInvBuyPrice(e.target.value.replace(/[^0-9]/g, ""))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
-                  />
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">시장 구분</label>
+                  <select
+                    value={invMarket}
+                    onChange={(e) => setInvMarket(e.target.value as any)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="KR">국내주식 (KRW)</option>
+                    <option value="US">미국주식 (USD/KRW)</option>
+                    <option value="CRYPTO">가상자산</option>
+                    <option value="OTHER">기타</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">보유 수량 (주/개)</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">보유 수량 (주)</label>
                   <input
                     type="number"
                     step="any"
                     min="0.0001"
-                    placeholder="10"
                     value={invQuantity}
                     onChange={(e) => setInvQuantity(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-semibold"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">현재가 (당일 시세)</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">매수 단가 (원)</label>
                   <input
                     type="text"
-                    placeholder="78,500"
-                    value={invCurrentPrice ? Number(invCurrentPrice).toLocaleString("ko-KR") : ""}
-                    onChange={(e) => setInvCurrentPrice(e.target.value.replace(/[^0-9]/g, ""))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
+                    placeholder="0"
+                    value={invBuyPrice ? Number(invBuyPrice).toLocaleString("ko-KR") : ""}
+                    onChange={(e) => setInvBuyPrice(e.target.value.replace(/[^0-9]/g, ""))}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-bold"
                   />
                 </div>
               </div>
 
-              {/* 실시간 투자 손익 프리뷰 카드 */}
-              {previewInvested > 0 && (
-                <div className="bg-gradient-to-br from-purple-950/40 to-slate-950 border border-purple-500/30 rounded-xl p-4 space-y-2">
-                  <div className="text-xs font-bold text-purple-300 flex justify-between">
-                    <span>💡 실시간 투자 수익률 분석</span>
-                    <span className={`font-black ${previewProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      {previewProfit >= 0 ? "+" : ""}{previewReturnRate}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-baseline pt-1">
-                    <span className="text-xs text-slate-400">현재 총 평가액</span>
-                    <span className="text-lg font-black text-purple-300">
-                      {formatKRW(previewEvaluated)}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 flex justify-between border-t border-slate-800/80 pt-1.5">
-                    <span>투자 원금: {formatKRW(previewInvested)}</span>
-                    <span className={`font-semibold ${previewProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      평가손익: {previewProfit >= 0 ? "+" : ""}{formatKRW(previewProfit)}
-                    </span>
-                  </div>
-                </div>
-              )}
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">
+                  현재가 (원) <span className="text-slate-500 font-normal">- 실시간 시세 자동 반영</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="현재가 미입력 시 매수 단가와 동일"
+                  value={invCurrentPrice ? Number(invCurrentPrice).toLocaleString("ko-KR") : ""}
+                  onChange={(e) => setInvCurrentPrice(e.target.value.replace(/[^0-9]/g, ""))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-black text-purple-300 focus:outline-none focus:border-purple-500"
+                />
+              </div>
 
-              <div className="pt-2 flex gap-3">
+              {/* Real-time Calculation Summary Box */}
+              <div className="bg-slate-950/80 border border-purple-500/30 p-4 rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-xs text-purple-300 font-bold">
+                  <span>실시간 평가 및 수익률</span>
+                  <span className={previewProfit >= 0 ? "text-emerald-400 font-black" : "text-rose-400 font-black"}>
+                    {previewProfit >= 0 ? "+" : ""}{previewReturnRate}% ({previewProfit >= 0 ? "+" : ""}{formatKRW(previewProfit)})
+                  </span>
+                </div>
+                <div className="text-xl font-black text-white">
+                  평가금액: {formatKRW(previewEvaluated)}
+                </div>
+                <div className="text-xs text-slate-400 flex justify-between pt-1 border-t border-slate-800">
+                  <span>총 매수 투자금: {formatKRW(previewInvested)}</span>
+                  <span>보유 수량: {previewQty}주</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsInvModalOpen(false)}
-                  className="flex-1 bg-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-semibold"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-semibold"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-purple-500 text-slate-950 py-2.5 rounded-xl text-xs font-bold hover:bg-purple-600 shadow-lg shadow-purple-500/20"
+                  className="px-5 py-2 bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-xl text-xs shadow-lg shadow-purple-500/20"
                 >
-                  {editingInv ? "종목 수정 완료" : "종목 등록"}
+                  {editingInv ? "수정 완료" : "종목 저장"}
                 </button>
               </div>
             </form>
