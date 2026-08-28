@@ -159,6 +159,7 @@ export function App() {
         setCurrentMonth={setCurrentMonth}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenAutoSyncModal={() => setIsAutoSyncOpen(true)}
+        onOpenBankConnect={() => setIsBankConnectOpen(true)}
       />
 
       {/* Main Screen Content View */}
@@ -172,7 +173,6 @@ export function App() {
             budgets={budgets}
             onNavigateTab={setActiveTab}
             onOpenAddModal={() => handleOpenAddModal()}
-            onOpenBankConnect={() => setIsBankConnectOpen(true)}
           />
         )}
 

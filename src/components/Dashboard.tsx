@@ -28,9 +28,7 @@ import {
   Calendar,
   Clock,
   Plus,
-  LineChart as LineChartIcon,
-  Zap,
-  Building2
+  LineChart as LineChartIcon
 } from "lucide-react";
 
 interface DashboardProps {
@@ -41,7 +39,6 @@ interface DashboardProps {
   budgets: Record<string, MonthlyBudget>;
   onNavigateTab: (tab: any) => void;
   onOpenAddModal: () => void;
-  onOpenBankConnect?: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -52,7 +49,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   budgets,
   onNavigateTab,
   onOpenAddModal,
-  onOpenBankConnect,
 }) => {
   // 1. 자산 계산 (Net Worth)
   const totalAssets = accounts
@@ -235,36 +231,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* 🌟 뱅크샐러드형 마이데이터 은행 연동 배너 */}
-      {onOpenBankConnect && (
-        <div className="bg-gradient-to-r from-emerald-950/80 via-slate-900 to-teal-950/80 border border-emerald-500/40 rounded-2xl p-4 sm:p-5 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0 shadow-md shadow-emerald-500/20">
-              <Zap className="w-6 h-6 fill-emerald-400" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm sm:text-base font-bold text-white">마이데이터 은행 & 카드사 자동 연동</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
-                  실시간 연동
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-1">
-                토스, 카카오뱅크, 국민, 신한, 현대카드 등 공인인증/간편인증으로 자산과 내역을 1초 만에 불러옵니다.
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={onOpenBankConnect}
-            className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-slate-950 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black shadow-lg shadow-emerald-500/25 transition shrink-0 cursor-pointer"
-          >
-            <Building2 className="w-4 h-4 stroke-[2.5]" />
-            <span>은행/카드 연동하기</span>
-          </button>
-        </div>
-      )}
-
       {/* Top Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 순자산 */}

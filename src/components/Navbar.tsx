@@ -14,7 +14,8 @@ import {
   Lock, 
   Zap, 
   X,
-  Check
+  Check,
+  Building2
 } from "lucide-react";
 
 export type NavTab = "dashboard" | "transactions" | "budgets" | "recurring" | "accounts" | "ai";
@@ -26,6 +27,7 @@ interface NavbarProps {
   setCurrentMonth: (month: string) => void;
   onOpenSettings: () => void;
   onOpenAutoSyncModal?: () => void;
+  onOpenBankConnect?: () => void;
   isPasswordEnabled?: boolean;
   onLockApp?: () => void;
 }
@@ -37,6 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentMonth,
   onOpenSettings,
   onOpenAutoSyncModal,
+  onOpenBankConnect,
   isPasswordEnabled,
   onLockApp,
 }) => {
@@ -162,6 +165,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title="지금 잠그기"
                 >
                   <Lock className="w-4 h-4 text-emerald-400" />
+                </button>
+              )}
+
+              {/* 🏦 마이데이터 은행/카드사 연동 아이콘 버튼 */}
+              {onOpenBankConnect && (
+                <button
+                  onClick={onOpenBankConnect}
+                  className="w-9 h-9 flex items-center justify-center text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl transition active:scale-95 shadow-sm"
+                  title="마이데이터 은행 & 카드사 실시간 연동"
+                >
+                  <Building2 className="w-4 h-4 stroke-[2.2]" />
                 </button>
               )}
 
