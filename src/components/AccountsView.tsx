@@ -533,7 +533,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               <PiggyBank className="w-5 h-5" />
             </div>
             <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
-              {savings.length}개 플랜
+              {savings.length}개
             </span>
           </div>
           <div className="mt-3">
@@ -559,7 +559,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               <TrendingUp className="w-5 h-5" />
             </div>
             <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
-              {investments.length}개 종목
+              {investments.length}개
             </span>
           </div>
           <div className="mt-3">
