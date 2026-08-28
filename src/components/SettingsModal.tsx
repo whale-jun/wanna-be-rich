@@ -9,7 +9,9 @@ import {
   KeyRound, 
   Bot, 
   Check, 
-  Database
+  Database,
+  Building2,
+  Zap
 } from "lucide-react";
 
 interface SettingsModalProps {
@@ -24,6 +26,8 @@ interface SettingsModalProps {
   apiKey: string;
   onApiKeyChange: (key: string) => void;
   onOpenDataMenu: () => void;
+  onOpenBankConnect?: () => void;
+  onOpenAutoSync?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -38,6 +42,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   apiKey,
   onApiKeyChange,
   onOpenDataMenu,
+  onOpenBankConnect,
+  onOpenAutoSync,
 }) => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -293,7 +299,63 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* 4. 데이터 백업 바로가기 */}
+          {/* 4. 마이데이터 은행 & 카드 연동 */}
+          {onOpenBankConnect && (
+            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-emerald-500/30 transition">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm font-bold text-white">마이데이터 은행 & 카드사 연동</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
+                    실시간
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  토스, 카카오뱅크, 국민, 신한, 현대카드 등 공인인증/간편인증 자산 자동 수집
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenBankConnect();
+                }}
+                className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold px-3.5 py-2 rounded-xl transition shrink-0"
+              >
+                연동 관리 →
+              </button>
+            </div>
+          )}
+
+          {/* 5. 결제 문자 & 알림톡 100% 자동 연동 센터 */}
+          {onOpenAutoSync && (
+            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-amber-500/30 transition">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-400 fill-amber-400/20" />
+                  <span className="text-sm font-bold text-white">결제 문자 & 알림톡 자동 연동</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">
+                    단축어
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  아이폰 단축어 자동화로 카드 결제 시 가계부에 1초 만에 자동 기록
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenAutoSync();
+                }}
+                className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold px-3.5 py-2 rounded-xl transition shrink-0"
+              >
+                자동 설정 →
+              </button>
+            </div>
+          )}
+
+          {/* 6. 데이터 백업 바로가기 */}
           <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-5 flex items-center justify-between">
             <div>
               <span className="text-sm font-bold text-white flex items-center gap-2">
@@ -309,7 +371,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onClose();
                 onOpenDataMenu();
               }}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl transition"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl transition shrink-0"
             >
               열기 →
             </button>

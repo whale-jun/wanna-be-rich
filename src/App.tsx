@@ -158,8 +158,6 @@ export function App() {
         currentMonth={currentMonth}
         setCurrentMonth={setCurrentMonth}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenAutoSyncModal={() => setIsAutoSyncOpen(true)}
-        onOpenBankConnect={() => setIsBankConnectOpen(true)}
       />
 
       {/* Main Screen Content View */}
@@ -298,7 +296,7 @@ export function App() {
         onLoadFullBackup={loadFullBackup}
       />
 
-      {/* Settings Modal (Theme, Password, Gemini) */}
+      {/* Settings Modal (Theme, Password, Gemini, Bank Sync, Shortcuts, Backup) */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -311,6 +309,8 @@ export function App() {
         apiKey={geminiApiKey}
         onApiKeyChange={setGeminiApiKey}
         onOpenDataMenu={() => setIsDataMenuOpen(true)}
+        onOpenBankConnect={() => setIsBankConnectOpen(true)}
+        onOpenAutoSync={() => setIsAutoSyncOpen(true)}
       />
     </div>
   );

@@ -12,10 +12,8 @@ import {
   Calendar, 
   Settings, 
   Lock, 
-  Zap, 
   X,
-  Check,
-  Building2
+  Check
 } from "lucide-react";
 
 export type NavTab = "dashboard" | "transactions" | "budgets" | "recurring" | "accounts" | "ai";
@@ -26,8 +24,6 @@ interface NavbarProps {
   currentMonth: string; // YYYY-MM
   setCurrentMonth: (month: string) => void;
   onOpenSettings: () => void;
-  onOpenAutoSyncModal?: () => void;
-  onOpenBankConnect?: () => void;
   isPasswordEnabled?: boolean;
   onLockApp?: () => void;
 }
@@ -38,8 +34,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentMonth,
   setCurrentMonth,
   onOpenSettings,
-  onOpenAutoSyncModal,
-  onOpenBankConnect,
   isPasswordEnabled,
   onLockApp,
 }) => {
@@ -168,32 +162,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               )}
 
-              {/* 🏦 마이데이터 은행/카드사 연동 아이콘 버튼 */}
-              {onOpenBankConnect && (
-                <button
-                  onClick={onOpenBankConnect}
-                  className="w-9 h-9 flex items-center justify-center text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl transition active:scale-95 shadow-sm"
-                  title="마이데이터 은행 & 카드사 실시간 연동"
-                >
-                  <Building2 className="w-4 h-4 stroke-[2.2]" />
-                </button>
-              )}
-
-              {onOpenAutoSyncModal && (
-                <button
-                  onClick={onOpenAutoSyncModal}
-                  className="h-9 px-2.5 sm:px-3 flex items-center gap-1.5 text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-xs font-bold transition active:scale-95 shadow-sm"
-                  title="은행/카드 결제 100% 자동 연동 센터"
-                >
-                  <Zap className="w-4 h-4 text-amber-400 fill-amber-400/20" />
-                  <span className="hidden sm:inline">자동연동</span>
-                </button>
-              )}
-
               <button
                 onClick={onOpenSettings}
                 className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-200 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-xl transition active:scale-95"
-                title="환경 설정 (테마, 비밀번호, 데이터 관리)"
+                title="환경 설정 (테마, 비밀번호, 연동 설정, 백업)"
               >
                 <Settings className="w-4 h-4" />
               </button>
