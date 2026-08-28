@@ -302,72 +302,76 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                     {txList.map((tx) => {
                       const accName = accountMap.get(tx.accountId) || tx.paymentMethod || "미지정";
                       const toAccName = tx.toAccountId ? accountMap.get(tx.toAccountId) : "";
+                      const color = getCategoryColor(tx.category);
+                      const bgColor = getCategoryBgColor(tx.category);
 
                       return (
                         <div 
                           key={tx.id} 
-                          className="px-5 py-3.5 flex items-center justify-between hover:bg-slate-800/30 transition group"
+                          className="px-4 py-3.5 sm:px-5 sm:py-4 flex flex-col gap-1.5 hover:bg-slate-800/30 transition group"
                         >
-                          <div className="flex items-center gap-3">
-                            <span 
-                              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold"
-                              style={{ 
-                                backgroundColor: getCategoryBgColor(tx.category), 
-                                color: getCategoryColor(tx.category) 
-                              }}
-                            >
-                              {tx.category.slice(0, 2)}
-                            </span>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-white">
-                                  {tx.memo || tx.category}
+                          {/* 1행: [카테고리 뱃지/명] [메모 / 8월 정기 급여]             [수정/삭제] */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span 
+                                className="px-2 py-0.5 rounded-lg text-xs font-bold shrink-0 border"
+                                style={{ 
+                                  backgroundColor: bgColor, 
+                                  color: color,
+                                  borderColor: `${color}40`
+                                }}
+                              >
+                                {tx.category}
+                              </span>
+                              <span className="text-sm sm:text-base font-bold text-white truncate">
+                                {tx.memo || tx.category}
+                              </span>
+                              {tx.isFixed && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold shrink-0">
+                                  고정비
                                 </span>
-                                {tx.isFixed && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">
-                                    고정비
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
-                                <span>{tx.category}</span>
-                                <span>•</span>
-                                <span>
-                                  {tx.type === "transfer" ? `${accName} → ${toAccName}` : accName}
-                                </span>
-                                {tx.paymentMethod && tx.type === "expense" && (
-                                  <>
-                                    <span>•</span>
-                                    <span>{tx.paymentMethod}</span>
-                                  </>
-                                )}
-                              </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition shrink-0">
+                              <button
+                                onClick={() => onEditTransaction(tx)}
+                                className="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition"
+                                title="수정"
+                              >
+                                <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              </button>
+                              <button
+                                onClick={() => onDeleteTransaction(tx.id)}
+                                className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition"
+                                title="삭제"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              </button>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-4">
-                            <div className={`text-sm sm:text-base font-bold text-right ${
+                          {/* 2행: [카테고리 / 토스 주거래 통장]                 [+4,200,000 원] */}
+                          <div className="flex items-center justify-between gap-2 pt-0.5">
+                            <div className="text-xs text-slate-400 flex items-center gap-1.5 truncate">
+                              <span className="text-slate-300 font-medium">{tx.category}</span>
+                              <span className="text-slate-600">•</span>
+                              <span className="text-slate-400 truncate">
+                                {tx.type === "transfer" ? `${accName} → ${toAccName}` : accName}
+                              </span>
+                              {tx.paymentMethod && tx.type === "expense" && (
+                                <>
+                                  <span className="text-slate-600">•</span>
+                                  <span className="text-slate-400">{tx.paymentMethod}</span>
+                                </>
+                              )}
+                            </div>
+
+                            <div className={`text-base sm:text-lg font-black tracking-tight shrink-0 text-right ${
                               tx.type === "income" ? "text-emerald-400" : tx.type === "expense" ? "text-rose-400" : "text-sky-400"
                             }`}>
                               {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : "⇄ "}
                               {formatKRW(tx.amount)}
-                            </div>
-
-                            <div className="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition">
-                              <button
-                                onClick={() => onEditTransaction(tx)}
-                                className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition"
-                                title="수정"
-                              >
-                                <Edit3 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => onDeleteTransaction(tx.id)}
-                                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition"
-                                title="삭제"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
                             </div>
                           </div>
                         </div>
@@ -478,38 +482,56 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                 {transactions.filter(t => t.date === selectedCalendarDate).length > 0 ? (
                   transactions
                     .filter(t => t.date === selectedCalendarDate)
-                    .map((tx) => (
-                      <div 
-                        key={tx.id}
-                        className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span 
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold"
-                            style={{ backgroundColor: getCategoryBgColor(tx.category), color: getCategoryColor(tx.category) }}
-                          >
-                            {tx.category.slice(0, 2)}
-                          </span>
-                          <div>
-                            <div className="text-xs font-bold text-white">{tx.memo || tx.category}</div>
-                            <div className="text-[10px] text-slate-400">{accountMap.get(tx.accountId)}</div>
+                    .map((tx) => {
+                      const accName = accountMap.get(tx.accountId) || tx.paymentMethod || "미지정";
+                      const toAccName = tx.toAccountId ? accountMap.get(tx.toAccountId) : "";
+                      const color = getCategoryColor(tx.category);
+                      const bgColor = getCategoryBgColor(tx.category);
+
+                      return (
+                        <div 
+                          key={tx.id}
+                          className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col gap-1.5 hover:border-slate-700 transition group"
+                        >
+                          {/* 1행: [카테고리] [메모] [수정 버튼] */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span 
+                                className="px-2 py-0.5 rounded text-[11px] font-bold shrink-0 border"
+                                style={{ 
+                                  backgroundColor: bgColor, 
+                                  color: color,
+                                  borderColor: `${color}40`
+                                }}
+                              >
+                                {tx.category}
+                              </span>
+                              <span className="text-xs font-bold text-white truncate">
+                                {tx.memo || tx.category}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => onEditTransaction(tx)}
+                              className="text-slate-400 hover:text-slate-200 p-1 shrink-0"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* 2행: [계좌명] [+4,200,000 원] */}
+                          <div className="flex items-center justify-between gap-2 pt-0.5">
+                            <span className="text-[11px] text-slate-400 truncate">
+                              {tx.type === "transfer" ? `${accName} → ${toAccName}` : accName}
+                            </span>
+                            <span className={`text-xs font-black tracking-tight shrink-0 ${
+                              tx.type === "income" ? "text-emerald-400" : tx.type === "expense" ? "text-rose-400" : "text-sky-400"
+                            }`}>
+                              {tx.type === "income" ? "+" : "-"}{formatKRW(tx.amount)}
+                            </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className={`text-xs font-bold ${
-                            tx.type === "income" ? "text-emerald-400" : "text-rose-400"
-                          }`}>
-                            {tx.type === "income" ? "+" : "-"}{formatKRW(tx.amount)}
-                          </span>
-                          <button
-                            onClick={() => onEditTransaction(tx)}
-                            className="text-slate-400 hover:text-slate-200 p-1"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                 ) : (
                   <div className="text-xs text-slate-500 py-3 text-center">
                     이 날짜의 거래 내역이 없습니다.
