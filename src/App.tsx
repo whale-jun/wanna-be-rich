@@ -267,7 +267,7 @@ export function App() {
         defaultDate={modalDefaultDate}
       />
 
-      {/* ⚡ 뱅크샐러드형 마이데이터 은행 & 카드 연동 모달 */}
+      {/* ⚡ 마이데이터 은행 & 카드 연동 모달 */}
       <BankConnectModal
         isOpen={isBankConnectOpen}
         onClose={() => setIsBankConnectOpen(false)}

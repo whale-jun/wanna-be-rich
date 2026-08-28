@@ -160,7 +160,7 @@ export const BankConnectModal: React.FC<BankConnectModalProps> = ({
               <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                 <span>마이데이터 은행 & 카드 연동</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
-                  뱅크샐러드형 자동동기화
+                  실시간 자동동기화
                 </span>
               </h3>
               <p className="text-xs text-slate-400">

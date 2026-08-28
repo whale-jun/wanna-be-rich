@@ -246,7 +246,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm sm:text-base font-bold text-white">마이데이터 은행 & 카드사 자동 연동</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
-                  뱅크샐러드형
+                  실시간 연동
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-1">
