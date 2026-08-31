@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useFinancialData } from "./hooks/useFinancialData";
 import { useTheme } from "./hooks/useTheme";
 import { useSecurity } from "./hooks/useSecurity";
+import { useAuth } from "./hooks/useAuth";
 import { Navbar } from "./components/Navbar";
 import type { NavTab } from "./components/Navbar";
 import { BottomNav } from "./components/BottomNav";
@@ -18,6 +19,7 @@ import { LockScreen } from "./components/LockScreen";
 import { AutoSyncGuideModal } from "./components/AutoSyncGuideModal";
 import { BankConnectModal } from "./components/BankConnectModal";
 import { SplashScreen } from "./components/SplashScreen";
+import { AuthScreen } from "./components/AuthScreen";
 import { parseMultipleSms, convertParsedToTransactions } from "./utils/smsParser";
 import type { Transaction, Account } from "./types/financial";
 import { Plus } from "lucide-react";
@@ -57,6 +59,9 @@ export function App() {
 
   // Intro Splash Screen State
   const [showSplash, setShowSplash] = useState(true);
+
+  // Authentication Hook (로그인 / 회원가입 / 휴대폰인증)
+  const auth = useAuth();
 
   // Theme hook
   const { theme, setTheme } = useTheme();
@@ -139,18 +144,23 @@ export function App() {
     }
   }, [accounts, addTransaction]);
 
-  // If app is locked by password, render the LockScreen
+  // 1. 초기 스플래시 화면
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
+
+  // 2. 비로그인 상태일 때 로그인 / 회원가입 인증 화면 렌더링
+  if (!auth.isAuthenticated) {
+    return <AuthScreen auth={auth} />;
+  }
+
+  // 3. 비밀번호 잠금 상태일 때 렌더링
   if (!isUnlocked) {
     return <LockScreen onUnlock={unlockApp} />;
   }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 antialiased flex flex-col font-sans transition-colors duration-200 pb-20 md:pb-6 overflow-x-hidden w-full">
-      {/* Splash Screen (Shown on initial launch) */}
-      {showSplash && (
-        <SplashScreen onFinish={() => setShowSplash(false)} />
-      )}
-
       {/* Top Universal Navbar */}
       <Navbar
         activeTab={activeTab}
@@ -296,7 +306,7 @@ export function App() {
         onLoadFullBackup={loadFullBackup}
       />
 
-      {/* Settings Modal (Theme, Password, Gemini, Bank Sync, Shortcuts, Backup) */}
+      {/* Settings Modal (Theme, Password, Gemini, Bank Sync, Shortcuts, Backup, User Account) */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -311,6 +321,8 @@ export function App() {
         onOpenDataMenu={() => setIsDataMenuOpen(true)}
         onOpenBankConnect={() => setIsBankConnectOpen(true)}
         onOpenAutoSync={() => setIsAutoSyncOpen(true)}
+        currentUser={auth.currentUser}
+        onLogout={auth.logout}
       />
     </div>
   );

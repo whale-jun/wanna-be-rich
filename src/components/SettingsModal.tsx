@@ -11,7 +11,9 @@ import {
   Check, 
   Database,
   Building2,
-  Zap
+  Zap,
+  User,
+  LogOut
 } from "lucide-react";
 
 interface SettingsModalProps {
@@ -28,6 +30,8 @@ interface SettingsModalProps {
   onOpenDataMenu: () => void;
   onOpenBankConnect?: () => void;
   onOpenAutoSync?: () => void;
+  currentUser?: { username: string; phone?: string; name?: string } | null;
+  onLogout?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -44,6 +48,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenDataMenu,
   onOpenBankConnect,
   onOpenAutoSync,
+  currentUser,
+  onLogout,
 }) => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -105,6 +111,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+          {/* 0. 로그인 사용자 계정 정보 */}
+          {currentUser && (
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950/40 border border-emerald-500/30 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white">@{currentUser.username}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
+                      로그인 중
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5 font-mono">
+                    {currentUser.phone ? `인증번호: ${currentUser.phone}` : "인증 계정"}
+                  </p>
+                </div>
+              </div>
+
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm("로그아웃 하시겠습니까?")) {
+                      onClose();
+                      onLogout();
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold transition active:scale-95 shrink-0"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>로그아웃</span>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* 1. 화면 테마 설정 (화이트 / 블랙 / 시스템 설정) */}
           <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between">
