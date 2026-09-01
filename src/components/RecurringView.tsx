@@ -376,6 +376,9 @@ export const RecurringView: React.FC<RecurringViewProps> = ({
                   onChange={(e) => setAccountId(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
                 >
+                  {accounts.length === 0 && (
+                    <option value="">등록된 계좌 없음 (현금/미지정)</option>
+                  )}
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>{a.name} ({a.institution || a.type})</option>
                   ))}

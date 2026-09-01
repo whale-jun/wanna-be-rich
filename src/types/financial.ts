@@ -43,6 +43,7 @@ export interface Transaction {
   toAccountId?: string; // 이체인 경우 입금 계좌 ID
   memo: string;
   isFixed?: boolean; // 고정비 여부
+  isRecurring?: boolean; // 정기결제 반영 여부
   recurringId?: string; // 연동된 정기결제 ID
   paymentMethod?: PaymentMethod;
   // 월급일 경우 소득세 등

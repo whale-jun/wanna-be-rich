@@ -475,7 +475,12 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                 </PieChart>
               </ResponsiveContainer>
             </div>
-          ) : null}
+          ) : (
+            <div className="h-32 flex flex-col items-center justify-center text-slate-500 text-xs text-center px-2">
+              <span className="text-slate-400 font-semibold mb-1">등록된 자산이 없습니다</span>
+              <span className="text-[11px] text-slate-500">아래 탭에서 자산을 등록해보세요</span>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-1 text-[11px] text-center pt-1 border-t border-slate-800/80">
             {assetChartData.map((d) => (

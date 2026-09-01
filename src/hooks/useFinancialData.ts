@@ -21,90 +21,69 @@ import {
   initialInvestments 
 } from "../utils/mockData";
 
+// 데이터 버전 키 (빈 초기 상태로 마이그레이션)
+const STORAGE_INIT_KEY = "wbr_data_clean_init_v3";
+
 export const useFinancialData = () => {
-  // 계좌 / 자산
+  // 초기화 여부 체크: 최초 실행 시 기존 샘플 로컬스토리지 데이터를 깨끗이 비워 빈 상태로 시작
+  const checkInitialSetup = () => {
+    const isInit = localStorage.getItem(STORAGE_INIT_KEY);
+    if (!isInit) {
+      localStorage.removeItem("agy_accounts");
+      localStorage.removeItem("agy_transactions");
+      localStorage.removeItem("agy_recurring");
+      localStorage.removeItem("agy_budgets");
+      localStorage.removeItem("agy_savings");
+      localStorage.removeItem("agy_investments");
+      localStorage.setItem(STORAGE_INIT_KEY, "true");
+    }
+  };
+
+  // 1. 계좌 / 카드 / 자산 (기본 빈 배열)
   const [accounts, setAccounts] = useState<Account[]>(() => {
+    checkInitialSetup();
     const saved = localStorage.getItem("agy_accounts");
-    return saved ? JSON.parse(saved) : initialAccounts;
+    return saved ? JSON.parse(saved) : [];
   });
 
-  // 거래 내역 (수입, 지출, 이체)
+  // 2. 거래 내역 (수입, 지출, 이체) (기본 빈 배열)
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     const saved = localStorage.getItem("agy_transactions");
-    if (saved) return JSON.parse(saved);
-    
-    // 이전 버전(junsun_incomes, junsun_expenses) 마이그레이션 호환성
-    const oldIncomes = localStorage.getItem("junsun_incomes");
-    const oldExpenses = localStorage.getItem("junsun_expenses");
-    if (oldIncomes || oldExpenses) {
-      const migrated: Transaction[] = [];
-      if (oldIncomes) {
-        JSON.parse(oldIncomes).forEach((inc: any) => {
-          migrated.push({
-            id: inc.id || crypto.randomUUID(),
-            date: inc.date,
-            type: "income",
-            category: inc.category || "월급/급여",
-            amount: inc.amount,
-            accountId: "acc-1",
-            memo: "기존 수입 내역",
-            ...inc
-          });
-        });
-      }
-      if (oldExpenses) {
-        JSON.parse(oldExpenses).forEach((exp: any) => {
-          migrated.push({
-            id: exp.id || crypto.randomUUID(),
-            date: exp.date,
-            type: "expense",
-            category: exp.category || "식비",
-            amount: exp.amount,
-            accountId: exp.paymentMethod === "신용카드" ? "acc-3" : "acc-1",
-            memo: "기존 지출 내역",
-            isFixed: exp.type === "고정",
-            paymentMethod: exp.paymentMethod,
-          });
-        });
-      }
-      return migrated.length > 0 ? migrated : initialTransactions;
-    }
-
-    return initialTransactions;
+    return saved ? JSON.parse(saved) : [];
   });
 
-  // 정기결제 / 고정비
+  // 3. 정기결제 / 고정비 (기본 빈 배열)
   const [recurringItems, setRecurringItems] = useState<RecurringItem[]>(() => {
     const saved = localStorage.getItem("agy_recurring");
-    return saved ? JSON.parse(saved) : initialRecurringItems;
+    return saved ? JSON.parse(saved) : [];
   });
 
-  // 예산 설정
+  // 4. 예산 설정 (기본 빈 객체)
   const [budgets, setBudgets] = useState<Record<string, MonthlyBudget>>(() => {
     const saved = localStorage.getItem("agy_budgets");
-    return saved ? JSON.parse(saved) : initialBudgets;
+    return saved ? JSON.parse(saved) : {};
   });
 
-  // 저축 목표
+  // 5. 저축/적금 목표 (기본 빈 배열)
   const [savings, setSavings] = useState<Savings[]>(() => {
     const saved = localStorage.getItem("agy_savings");
-    const list: Savings[] = saved ? JSON.parse(saved) : initialSavings;
+    const list: Savings[] = saved ? JSON.parse(saved) : [];
     return list.map(calculateSavingsDetails);
   });
 
-  // 투자 자산
+  // 6. 투자 자산 / 주식 / 코인 (기본 빈 배열)
   const [investments, setInvestments] = useState<Investment[]>(() => {
     const saved = localStorage.getItem("agy_investments");
-    const list: Investment[] = saved ? JSON.parse(saved) : initialInvestments;
+    const list: Investment[] = saved ? JSON.parse(saved) : [];
     return list.map(calculateInvestmentDetails);
   });
 
-  // Gemini API Key
+  // 7. Gemini API Key
   const [geminiApiKey, setGeminiApiKey] = useState<string>(() => {
-    return localStorage.getItem("agy_gemini_api_key") || localStorage.getItem("junsun_gemini_api_key") || "";
+    return localStorage.getItem("agy_gemini_api_key") || "";
   });
 
-  // LocalStorage 동기화
+  // LocalStorage 자동 동기화
   useEffect(() => {
     localStorage.setItem("agy_accounts", JSON.stringify(accounts));
   }, [accounts]);
@@ -149,11 +128,11 @@ export const useFinancialData = () => {
           return { ...acc, balance: acc.balance + newTx.amount };
         } else if (newTx.type === "expense") {
           return { ...acc, balance: acc.balance - newTx.amount };
-        } else if (newTx.type === "transfer") {
+        } else if (newTx.type === "transfer" && newTx.toAccountId) {
           return { ...acc, balance: acc.balance - newTx.amount };
         }
       }
-      if (newTx.type === "transfer" && newTx.toAccountId && acc.id === newTx.toAccountId) {
+      if (newTx.type === "transfer" && acc.id === newTx.toAccountId) {
         return { ...acc, balance: acc.balance + newTx.amount };
       }
       return acc;
@@ -163,38 +142,45 @@ export const useFinancialData = () => {
   }, []);
 
   const updateTransaction = useCallback((id: string, updated: Partial<Transaction>) => {
-    setTransactions(prev => prev.map(tx => {
-      if (tx.id !== id) return tx;
-      let merged = { ...tx, ...updated };
-      if (merged.type === "income" && (merged.category === "월급/급여" || merged.category === "월급")) {
-        merged = calculateNetIncome(merged) as Transaction;
+    setTransactions(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      let newTx: Transaction = { ...t, ...updated };
+      if (newTx.type === "income" && (newTx.category === "월급/급여" || newTx.category === "월급")) {
+        newTx = calculateNetIncome(newTx) as Transaction;
       }
-      return merged;
+      return newTx;
     }));
   }, []);
 
   const deleteTransaction = useCallback((id: string) => {
-    setTransactions(prev => prev.filter(tx => tx.id !== id));
+    setTransactions(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  const importTransactions = useCallback((importedList: Partial<Transaction>[]) => {
-    const readyList = importedList.map(item => ({
-      id: item.id || crypto.randomUUID(),
-      date: item.date || new Date().toISOString().slice(0, 10),
-      type: item.type || "expense",
-      category: item.category || "기타지출",
-      amount: item.amount || 0,
-      accountId: item.accountId || accounts[0]?.id || "acc-1",
-      memo: item.memo || "",
-      isFixed: item.isFixed || false,
-    } as Transaction));
-
-    setTransactions(prev => [...readyList, ...prev]);
-  }, [accounts]);
+  const importTransactions = useCallback((newTxs: Partial<Transaction>[]) => {
+    const fullTxs: Transaction[] = newTxs.map(tx => {
+      let t: Transaction = {
+        id: tx.id || crypto.randomUUID(),
+        date: tx.date || new Date().toISOString().slice(0, 10),
+        type: tx.type || "expense",
+        category: tx.category || "식비",
+        amount: tx.amount || 0,
+        accountId: tx.accountId || "acc-1",
+        memo: tx.memo || "",
+        isFixed: tx.isFixed,
+        paymentMethod: tx.paymentMethod,
+        ...tx
+      };
+      if (t.type === "income" && (t.category === "월급/급여" || t.category === "월급")) {
+        t = calculateNetIncome(t) as Transaction;
+      }
+      return t;
+    });
+    setTransactions(prev => [...fullTxs, ...prev]);
+  }, []);
 
   // --- Accounts Actions ---
-  const addAccount = useCallback((account: Omit<Account, "id">) => {
-    const newAcc: Account = { ...account, id: crypto.randomUUID() };
+  const addAccount = useCallback((acc: Omit<Account, "id">) => {
+    const newAcc: Account = { ...acc, id: crypto.randomUUID() };
     setAccounts(prev => [...prev, newAcc]);
   }, []);
 
@@ -220,22 +206,31 @@ export const useFinancialData = () => {
     setRecurringItems(prev => prev.filter(r => r.id !== id));
   }, []);
 
-  const applyRecurringToTransaction = useCallback((recurring: RecurringItem, monthStr: string) => {
-    const date = `${monthStr}-${String(recurring.dayOfMonth).padStart(2, "0")}`;
-    addTransaction({
-      date,
-      type: recurring.type,
-      category: recurring.category,
-      amount: recurring.amount,
-      accountId: recurring.accountId,
-      memo: `[고정비] ${recurring.title}`,
-      isFixed: true,
-      recurringId: recurring.id,
-    });
-    updateRecurringItem(recurring.id, { lastAppliedMonth: monthStr });
-  }, [addTransaction, updateRecurringItem]);
+  const applyRecurringToTransaction = useCallback((itemOrId: RecurringItem | string, monthStr: string) => {
+    const recurringId = typeof itemOrId === "string" ? itemOrId : itemOrId.id;
+    const item = typeof itemOrId === "object" ? itemOrId : recurringItems.find(r => r.id === recurringId);
+    if (!item) return;
 
-  // --- Budget Actions ---
+    const day = String(item.dayOfMonth).padStart(2, "0");
+    const date = `${monthStr}-${day}`;
+
+    const newTx: Omit<Transaction, "id"> = {
+      date,
+      type: item.type,
+      category: item.category,
+      amount: item.amount,
+      accountId: item.accountId,
+      memo: `[정기결제] ${item.title}`,
+      isFixed: item.type === "expense",
+      isRecurring: true,
+      recurringId: item.id,
+    };
+
+    addTransaction(newTx);
+    updateRecurringItem(recurringId, { lastAppliedMonth: monthStr });
+  }, [recurringItems, addTransaction, updateRecurringItem]);
+
+  // --- Budgets Actions ---
   const setBudgetForMonth = useCallback((month: string, totalBudget: number, categoryBudgets: Record<string, number>) => {
     setBudgets(prev => ({
       ...prev,
@@ -274,6 +269,7 @@ export const useFinancialData = () => {
     setInvestments(prev => prev.filter(i => i.id !== id));
   }, []);
 
+  // 샘플 데이터로 복원 (테스트/체험용)
   const resetToSampleData = useCallback(() => {
     setAccounts(initialAccounts);
     setTransactions(initialTransactions);
@@ -283,6 +279,7 @@ export const useFinancialData = () => {
     setInvestments(initialInvestments.map(calculateInvestmentDetails));
   }, []);
 
+  // 모든 데이터를 완전히 0으로 초기화
   const clearAllData = useCallback(() => {
     setAccounts([]);
     setTransactions([]);

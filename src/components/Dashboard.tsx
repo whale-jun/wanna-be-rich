@@ -76,6 +76,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // 🎯 3-1. 이번달 지출 감정 이모티콘 연산 (적을수록 방긋 웃음, 많을수록 분노/울음)
   const getExpenseMood = () => {
+    if (summary.totalExpense === 0) {
+      return {
+        emoji: "🌱",
+        title: "소비 시작 전",
+        desc: "새로운 지출을 기록해보세요",
+        bg: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+      };
+    }
+
     const ratio = currentBudget > 0 
       ? budgetSpentPercent 
       : summary.totalIncome > 0 

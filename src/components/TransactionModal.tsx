@@ -179,6 +179,9 @@ const TransactionModalContent: React.FC<ModalContentProps> = ({
               onChange={(e) => setAccountId(e.target.value)}
               className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition"
             >
+              {accounts.length === 0 && (
+                <option value="">기본 현금/미지정</option>
+              )}
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
                   {acc.name} ({acc.institution || acc.type})
